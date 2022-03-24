@@ -266,3 +266,8 @@ In our situation, as our link is in a sticky world-writable directory (`/tmp`), 
     - Applications that break because of the change are easy to spot and fix. Applications that are vulnerable to symlink ToCToU (Time-of-check to time-of-use) by not having the change aren't.
 - Applications should just use mkstemp() or O_CREATE|O_EXCL (when used in `fopen` basically doesn't allow following symlinks).
     - Applications are not perfect, and new software is written all the time that makes these mistakes; blocking this flaw at the kernel is a single solution to the entire class of vulnerability. 
+
+**Authors (Group 5):**
+- Diogo Rodrigues up201806429
+- Pedro Azevedo up201603816
+- Rui Pinto up201806441

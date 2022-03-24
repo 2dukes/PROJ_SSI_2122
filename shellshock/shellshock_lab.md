@@ -572,3 +572,8 @@ Hello World
 ```
 
 As shown, the attacks were not successful and no commands were executed on the server-side.
+
+**Authors (Group 5):**
+- Diogo Rodrigues up201806429
+- Pedro Azevedo up201603816
+- Rui Pinto up201806441
