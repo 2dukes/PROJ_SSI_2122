@@ -1,4 +1,4 @@
-# Specter Attack Lab
+# Spectre Attack Lab
 
 This week's suggested lab was Spectre Attack Lab, from SEED labs, with the intent of providing us a better understanding of how Spectre attack exploits critical vulnerabilities related to race conditions in many modern processors, of Intel, AMD, and ARM.
 
