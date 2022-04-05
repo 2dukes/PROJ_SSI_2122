@@ -399,6 +399,7 @@ The secret key used can be found in the following dictionary:
 
 > Note: Again the left-side concerns the ciphertext, and the right side to the plaintext.
 
+We could also achieve the same result using the command `tr 'abcdefghijklmnopqrstuvwxyz' 'cfmypvbrlqxwiejdsgkhnazotu' < ciphertext.txt > plaintext.txt`
 
 We must state that there are many ways of solving this problem and obtaining the plaintext, but this is probably behind the scope of this lab. Nevertheless, this decrypting algorithm can be found [here](http://practicalcryptography.com/cryptanalysis/stochastic-searching/cryptanalysis-simple-substitution-cipher/#python-code). This algorithm uses "quadgrams" and a heuristic approach called Hill Climbing.
 
@@ -534,6 +535,8 @@ key=00112233445566778889AABBCCDDEEFF
 ```
 
 > Note: For the block cipher encryption algorithm, we used AES 128-bits. Also, in the case of the ECB, no IV is needed.
+
+In the encryption process, all the image bytes are encrypted, including the first 54 bytes that contain header information about the picture. But we just want to cipher from the 55th byte on. Therefore, we grab the first 54 bytes of the original image and append the bytes from offset 55 to the end of the file, from the encrypted image. This way we won't get an error when displaying the encrypted image.
 
 As a result, we obtained this image:
 
@@ -691,12 +694,12 @@ In this task, our goal is to see which of these encryptions modes are tolerant t
 
 **How much information can you recover by decrypting the corrupted file, if the encryption mode is ECB, CBC, CFB, or OFB, respectively?**
 
-The recovery of a corrupted file is different for each encryption mode. There are modes like ECB and OFB, where the decryption process doesn't depend much on the ciphertext of the previous iterations. So in those, we don't expect a lot of error propagation. For the CBC and CFB, and especially for the CBC which highly depends on the previous iterations, we expect much larger error propagation.
+The recovery of a corrupted file is different for each encryption mode. There are modes like ECB and OFB, where the decryption process doesn't depend on the ciphertext of the previous iterations. So in those, we don't expect a lot of error propagation. For the CBC and CFB, and especially for the CBC which highly depends on the previous iterations, we expect much larger error propagation.
 
 
 ### ECB
 
-To encrypt the files using CBC we run this command:
+To encrypt the files using ECB we run this command:
 
 ```
 ┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_Encryption/Labsetup/Files]
@@ -723,7 +726,7 @@ We observe that at the beginning of the file, the decryption got a bit messed up
 
 ### CBC
 
-To encrypt the files using ECB we run this command:
+To encrypt the files using CBC we run this command:
 
 ```
 ┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_Encryption/Labsetup/Files]
@@ -750,7 +753,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA�x�u��BU
                                                                             ��AAAAAAAA@AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 ```
 
-Again, parts of the file get corrupted. In the case of ECB was just a small part, for the reasons explained above. Now on CBC, as in the deciphering process, the next block always depends on the previous one, the affected area is much larger. If we had modified not only a single bit but an entire block the damages would be much bigger. 
+Again, parts of the file get corrupted. In the case of ECB was just a small part, for the reasons explained above. Now on CBC, as in the deciphering process, the next block always depends on the previous one, because the plaintext of a block is XORed with the ciphertext of the previous block, meaning the affected area is much larger. If we had modified not only a single bit but an entire block the damages would be much bigger. 
 
 ### CFB
 
@@ -810,13 +813,13 @@ iv =01020304050607080000000000000000
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA@AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 ```
 
-To finalize, the OFB seems to be the more resilient cipher mode, as only one character got messed up. This is due to the low dependency of the ciphertext between each iteration of the deciphering process. In the case of the OFB, in the decryption process, there's only an XOR between the keystream and N bits of the ciphertext, so the error doesn't propagate, as it's also a Strem cipher. In the case of the degree of dependency between a block in the ECB and OFB, we could say that they're very similar. But why does the ECB has more errors than OFB? This is because ECB is a block cipher, and the entire block is modified due to the single bit change. This doesn't happen in OFB, where each ciphering iteration is typically of a single bit or byte.
+To finalize, the OFB seems to be the more resilient cipher mode, as only one character got messed up. This is due to the low dependency of the ciphertext between each iteration of the deciphering process. In the case of the OFB, in the decryption process, there's only an XOR between the keystream and N bits of the ciphertext, so the error doesn't propagate, as it's also a Stream cipher. In the case of the degree of dependency between a block in the ECB and OFB, we could say that they're very similar. But why does the ECB has more errors than OFB? This is because ECB is a block cipher, and the entire block is modified due to the single bit change. This doesn't happen in OFB, where each ciphering iteration is typically of a single bit or byte.
 
 Having that said, our prediction was practically correct. The error propagation is bigger in the CBC, due to the high dependency between each block in the deciphering process, then on the CFB and ECB (which got quite similar results), and finally OFB, where the dependency is minimum.
 
 ## Task 6
 
-This task aims to help understanding the problems if an IV is not selected properly.
+This task aims to help understand the problems if an IV is not selected properly.
 
 ### Task 6.1
 
@@ -833,13 +836,13 @@ After encrypting the file with different Initialization vectors and the same key
 
 - File B: ``#| ��➈E�8mz    �g�3��$l�/�����l�`���í��%�Ҹ^l"��V'�(4,v�k�At/�\.^���%``
 
-After encrypting the file with the same key and Initialization vector we get the following result:
+After encrypting the file with the same key and Initialization vectors we get the following result:
 
 - File A: ``#| ��➈E�8m���f[y�b��҃e������S�f�ĳ������`�p�q!��X��;��ZXv��+�(%``
 
 - File B: ``#| ��➈E�8mz    �g�3��$l�/�����l�`���í��%�Ҹ^l"��V'�(4,v�k�At/�\.^���%``
 
-Both files start in the same way with `Isto é um ficheiro` and after encryptying with the same Initialization Vector and Key the beginning of both files is exactly the same `#| ��➈E�8m` meaning that you could easily reverse engineer the key that was used as well as the IV. Besides that, different messages should produce completely indistinguishable output and that is not guaranteed here. So, it's definitely wrong to reuse the same IV under the same key.
+Both files start in the same way with `Isto é um ficheiro` and after encrypting with the same Initialization Vector and Key the beginning of both files is the same `#| ��➈E�8m` meaning that you could easily reverse engineer the key that was used as well as the IV. Besides that, different messages should produce completely indistinguishable output and that is not guaranteed here. So, it's wrong to reuse the same IV under the same key.
 
 ### Task 6.2
 
@@ -871,7 +874,7 @@ print(r1.hex())
 print(r2.hex())
 ```
 
-Ciphers that use the OFB mode don't resist against the *known-plaintext attack*. In the OFB mode, the first part uses the IV which passes a block cipher with an encryption key to generate an output stream. Then, we XOR this output stream with the plaintext and obtain the ciphertext. But if the IV is used more than once, the same output stream will be used in the XOR operation with the plaintext and that is very unsafe. So if an attacker can find the output stream, all they need to do is to XOR the ciphertext with the output stream and that will produce the plaintext. In our case, we have access to a plaintext message P1 and the corresponding ciphertext (C1). If we XOR those two (variable `r1`), we obtain the output stream. And by XORing the second ciphertext (C2) with the previously obtained output stream, we get the plaintext of the C2 cipher (variable `r2`, in hexadecimal format). Finally, to obtain it on ASCII, we use the `xxd` with flags `-r` and `-p` to reverse the content in hexadecimal and print it in ASCII format. An execution example can be found here:
+Ciphers that use the OFB mode don't resist the *known-plaintext attack*. In the OFB mode, the first part uses the IV along with an encryption key which serves as input to a block cipher that generates an output stream. Then, we XOR this output stream with the plaintext and obtain the ciphertext. But if the IV is used more than once, the same output stream will be used in the XOR operation with the plaintext and that is very unsafe. So if an attacker can find the output stream, all they need to do is to XOR the ciphertext with the output stream and that will produce the plaintext. In our case, we have access to a plaintext message P1 and the corresponding ciphertext (C1). If we XOR those two (variable `r1`), we obtain the output stream. And by XORing the second ciphertext (C2) with the previously obtained output stream, we get the plaintext of the C2 cipher (variable `r2`, in hexadecimal format). Finally, to obtain it on ASCII, we use the `xxd` with flags `-r` and `-p` to reverse the content in hexadecimal and print it in ASCII format. An execution example can be found here:
 
 ```
 ┌──(kali㉿kali)-[~/…/category-crypto/Crypto_Encryption/Labsetup/Files]
@@ -886,7 +889,7 @@ Order: Launch a missile!
 
 As observed, the plain text message was `Order: Launch a missile!`.
 
-If we replace OFB in this experiment with CFB, the attack will not succeed **completely** because CFB uses bits of the XORed plaintext with the output stream (ciphertext) in every iteration. So even tough the IV is the same in both messages, the output stream will be different for every iteration of the algorithm. Only the first part of the message can be deciphered. 
+If we replace OFB in this experiment with CFB, the attack will not succeed **completely** because CFB uses bits of the XORed plaintext with the output stream (ciphertext) in every iteration. So even though the IV is the same in both messages, the output stream will be different for every iteration of the algorithm. Only the first part of the message can be deciphered. 
 
 Demonstration:
 
@@ -970,7 +973,7 @@ As observed with **CFB**, the final message is partially revealed: `Order: Launc
 
 ### Task 6.3
 
-In this task, we want to discover which message Bob sent. This time we don't use the same IV, but we use a predictable IV. We know that Bob's messages can only be "Yes" or "No" and we know which IV Bob used in his message, and what's the next IV to be used. As we're using CBC, we know that using predictable IV makes the algorithm vulnerable, because it's possible to discover the real plaintext message.
+In this task, we want to discover which message Bob sent. This time we don't use the same IV, but we use a predictable IV. We know that Bob's messages can only be "Yes" or "No" and we know which IV Bob used in his message, and what's the next IV to be used. As we're using CBC, we know that using predictable IVs makes the algorithm vulnerable, because it's possible to discover the real plaintext message.
 
 In CBC, the following operations will be performed:
 - Plaintext message: `"Yes"`.
@@ -986,7 +989,7 @@ By knowing that the next IV is `IV_2`, then we can cipher another message to tes
 - The block cipher's output will be `C2`.
 - So `C2 = C1`.
 
-So, the final ciphertext will be the same. If we instead pick "No" as our guess, the final result would be different and as we assume that Bob only sends "Yes" or "No". If it's not "No", then it must be "Yes"!
+So, the final ciphertext will be the same. If we instead pick "No" as our guess, the final result would be different, and as we assume that Bob only sends "Yes" or "No". If it's not "No", then it must be "Yes"!
 
 To demonstrate this, we first developed the following python script:
 
@@ -1015,7 +1018,7 @@ r2 = xor(r1, D3)
 print(r2.hex())
 ```
 
-This script grabs the logic explained before and in the `MSG` variable holds our bet, which is "Yes". In variable `IV_1` holds the IV that Bob used when ciphering his message. In variable `IV_2` it holds the next IV. What the script does, is the aforementioned operation: `"Yes"` ⊕ `IV_1` ⊕ `IV_2` and outputs it in hexadecimal format. Note that the `MSG` has to be padded to have a size of 16 bytes, as we're using a AES block cipher. So, when the oracle's output is the following:
+This script grabs the logic explained before and the `MSG` variable holds our bet, which is "Yes". In variable `IV_1` holds the IV that Bob used when ciphering his message. In variable `IV_2` it holds the next IV. What the script does, is the aforementioned operation: `"Yes"` ⊕ `IV_1` ⊕ `IV_2` and outputs it in hexadecimal format. Note that the `MSG` has to be padded to have a size of 16 bytes, as we're using an AES block cipher. So, when the oracle's output is the following:
 
 ```
 ┌──(kali㉿kali)-[~]
@@ -1056,11 +1059,11 @@ Next IV        : dfbc8b178d2b28296b0d71e15d6c3d77
 Your plaintext : 
 ```
 
-And indeed, our "Yes" prediction was correct. But we still notice something interesting. Only the first 128 bits (16 bytes) of the ciphertext match Bob's ciphertext. This happens because in the case of Bob, the input string to the CBC was "Yes" and that string was padded to have 16 bytes, producing an output of 16 bytes. But as the oracle only allowed input in hexadecimal format and, as its size is a multiple of 16 bytes, other 16 bytes are added as padding (PKCS#5), so 2 blocks of ciphertext are produced, being the second full of padding data.
+And indeed, our "Yes" prediction was correct. But we still notice something interesting. Only the first 128 bits (16 bytes) of the ciphertext match Bob's ciphertext. This happens because in the case of Bob, the input string to the CBC was "Yes" and that string was padded to have 16 bytes, producing an output of 16 bytes. But as the oracle only allows input in hexadecimal format and, as the plaintext's size is a multiple of 16 bytes, the other 16 bytes are added as padding (PKCS#5), so 2 blocks of ciphertext are produced, being the second full of padding data.
 
 ## Task 7
 
-In this task, we want to find the key used for a given ciphertext (`764aa26b55a4da654df6b19e4bce00f4ed05e09346fb0e762583cb7da2ac93a2`). Besides that, we also know the cipher used for the encryption, which is `aes-128-cbc`, the plain text (`This is a top secret.`) and the IV (`aabbccddeeff00998877665544332211`). We developed a C script that is a bruteforcer, and basically looks up for a set o keys in a `words.txt` file and tests it using the previously mentioned cipher. If the ciphertext, using a key is equal to the ciphertext mentioned in the task, then we know that was the key used to cipher the plain text.
+In this task, we want to find the key used for a given ciphertext (`764aa26b55a4da654df6b19e4bce00f4ed05e09346fb0e762583cb7da2ac93a2`). Besides that, we also know the cipher used for the encryption, which is `aes-128-cbc`, the plain text (`This is a top secret.`), and the IV (`aabbccddeeff00998877665544332211`). We developed a C script that is a bruteforcer, and looks up a set of keys in a `words.txt` file and tests it using the previously mentioned cipher. If the ciphertext, using a key is equal to the ciphertext mentioned in the task, then we know that was the key used to cipher the plain text.
 
 ```c
 #include <stdio.h>
@@ -1135,7 +1138,7 @@ int main (void)
 {
 
     /* A 128 bit IV */
-    unsigned char iv[] = { 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 };
+    unsigned char iv[] = { 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 };
     unsigned char correct_ciphertext[32] = { 0x76, 0x4a, 0xa2, 0x6b, 0x55, 0xa4, 0xda, 0x65, 0x4d, 0xf6, 0xb1, 0x9e, 0x4b, 0xce, 0x00, 0xf4, 0xed, 0x05, 0xe0, 0x93, 0x46, 0xfb, 0x0e, 0x76, 0x25, 0x83, 0xcb, 0x7d, 0xa2, 0xac, 0x93, 0xa2 };
     /* Message to be encrypted */
     unsigned char *plaintext =
