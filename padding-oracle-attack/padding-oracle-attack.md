@@ -134,7 +134,7 @@ As requested, doing this for the first 6 bytes manually is given by the followin
   - `P11 = C11 ⊕ I11 = 0xcc` (Note that `C16` belongs to `C1` not `C2`)
   - `CC1 = 00000000000000000000ea431af73dc8`
 
-In each byte of the plaintext (`P11-P16`) we're starting to secret message: `0xccddee030303`. Note that the last 3 bytes represent padding.
+In each byte of the plaintext (`P11-P16`) we're starting to get the secret message: `0xccddee030303`. Note that the last 3 bytes represent padding.
 
 To do this in an automated way, we can use the following python script:
 
@@ -326,7 +326,7 @@ This script follows the same logic as explained above. There's a special case we
 - A block like `0xAAAAAAAAAAAAAAAAAA07070707070707` where the last byte is `0x07`.
 - A block like `0xAAAAAAAAAAAAAAAAAA07070707070701` where the last byte is `0x01`. 
 
-To overcome this, we created the `decryptBlock` function which decrypts each block recursively by iterating a maximum of 256 times per byte. If it happens to find the right byte for the operation, it moves on to the next byte. But if a special case like the one mentioned happens, it can do backtrack to pick the right byte for each iteration.
+To overcome this, we created the `decryptBlock` function which decrypts each block recursively by iterating a maximum of 256 times per byte. If it happens to find the right byte for the operation, it moves on to the next byte. But if a special case like the one mentioned happens, it can backtrack to pick the right byte for each iteration.
 
 ## Task 3
 
@@ -484,7 +484,7 @@ if __name__ == "__main__":
     print("Plaintext (ASCII): " + bytes.fromhex(decipheredText).decode("unicode_escape"))
 ```
 
-Using the same approach as in the previous task, we use the `decryptBlock` function to decrypt each block and use a next-to-last byte approach, meaning for each iteration of the decyphering process, the last block will be each a block of the ciphertext. The exception is the first block. Here, as we know the `IV`, we just need to discover the output of the block cipher and XOR it with the `IV` to get the plaintext's first block. By running the script, we get the following output:
+Using the same approach as in the previous task, we use the `decryptBlock` function to decrypt each block and use a next-to-last byte approach, meaning for each iteration of the decyphering process, the last block will be a block of the ciphertext. The exception is the first block. Here, as we know the `IV`, we just need to discover the output of the block cipher and XOR it with the `IV` to get the plaintext's first block. By running the script, we get the following output:
 
 ```
 ┌──(kali㉿kali)-[~/…/seed-labs/category-crypto/Crypto_Padding_Oracle/Labsetup]
