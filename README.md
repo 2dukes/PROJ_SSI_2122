@@ -1,6 +1,14 @@
 # Computer Systems Security
 
-The following write-ups have to do with laboratorial tasks from the [Seed Labs](https://github.com/seed-labs/seed-labs) repository.
+The following [Seed Labs](https://github.com/seed-labs/seed-labs) related to Computer Systems Security were explored:
+
+| Lab                                              | Corresponding Seed Lab                                                                                 | Completed          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------ |
+| [Shellshock](shellshock/)                        | [Shellshock Vulnerability Lab](https://seedsecuritylabs.org/Labs_20.04/Software/Shellshock/)           | :heavy_check_mark: | 
+| [Race Condition](race-condition/)                | [Race Condition Vulnerability Lab](https://seedsecuritylabs.org/Labs_20.04/Software/Race_Condition/)   | :heavy_check_mark: |
+| [Spectre Attack](spectre/)                       | [Spectre Attack Lab](https://seedsecuritylabs.org/Labs_20.04/System/Spectre_Attack/)                   | :heavy_check_mark: |
+| [Secret Key Encryption](secret-key-encryption/)  | [Secret Key Encryption Lab](https://seedsecuritylabs.org/Labs_20.04/Crypto/Crypto_Encryption/)         | :heavy_check_mark: |
+| [Padding Oracle Attack](padding-oracle-attack/)  | [Padding Oracle Attack Lab](https://seedsecuritylabs.org/Labs_20.04/Crypto/Crypto_Padding_Oracle/)     | :heavy_check_mark: |
 
 * Collaborators
   - Diogo Rodrigues up201806429@up.pt
