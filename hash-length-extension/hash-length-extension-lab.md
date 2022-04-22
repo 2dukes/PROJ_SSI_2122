@@ -9,7 +9,7 @@ This week's suggested lab was Hash Length Extension Lab, from SEED labs, with th
 
 # Introduction
 
-In this lab, an attack called *length extension attack* is explored. It starts with the idea that a MAC is calculated by concatenating a key with a message and producing a one-way hash of the resulting string. Unfortunately, this method is subject to an attack because attackers may modify the message while still being able to generate a valid MAC based on the modified message and without knowing the secret key used for producing the MAC.
+In this lab, an attack called *Length Extension Attack* is explored. It starts with the idea that a MAC is calculated by concatenating a key with a message and producing a one-way hash of the resulting string. Unfortunately, this method is subject to an attack because attackers may modify the message while still being able to generate a valid MAC based on the modified message and without knowing the secret key used for producing the MAC.
 
 # Tasks
 
@@ -312,3 +312,146 @@ for(i=0; i<64; i++)
 ```
 
 64 bytes in this case. This value is very important because it guarantees that when our message is padded we use the 64 bytes of the `K || M || P` part, in our case, and then the next 20 bytes (`T`) with the string `&download=secret.txt` so that later on, the padding for the whole message is calculated as a multiple of 512 bits and with the 64-bit value at the final part of the padding having a value of 84 bytes * 8 = 672 bits(64 + 20 = 80 bytes).
+
+## Task 4
+
+In the previous tasks, we discussed how to compute a MAC in an insecure way and how could this be exploited. In this task, we'll focus on the secure way to calculate it, using HMAC.
+
+To start we go to the `verify_mac()` function in the server program and change the MAC calculation to the following code:
+
+```python
+real_mac = hmac.new(bytearray(key.encode(’utf-8’)),
+            msg=message.encode(’utf-8’, ’surrogateescape’),
+            digestmod=hashlib.sha256).hexdigest()
+```
+
+We were asked to repeat task 1. For that, we first need to compute the MAC of the message `myname=RuiPinto&uid=1001&lstcmd=1`, which lists the files. For that, we use the following python script that uses HMAC:
+
+```python
+import hmac
+import hashlib
+
+key='123456'
+message='myname=RuiPinto&uid=1001&lstcmd=1'
+mac = hmac.new(bytearray(key.encode('utf-8')),
+        msg=message.encode('utf-8', 'surrogateescape'),
+        digestmod=hashlib.sha256).hexdigest()
+
+print(mac)
+```
+
+When running it, we obtain the following MAC:
+
+```
+┌──(kali㉿kali)-[~/…/seed-labs/category-crypto/Crypto_Hash_Length_Ext/Labsetup]
+└─$ python3 hmac_calc.py
+3623873a13d12ade69a3db951b175e0c45f981dfde706b6356bfae88a7b1c5df
+```
+
+We then obtain the following URL to access: http://www.seedlab-hashlen.com/?myname=RuiPinto&uid=1001&lstcmd=1&mac=3623873a13d12ade69a3db951b175e0c45f981dfde706b6356bfae88a7b1c5df.
+
+```
+┌──(kali㉿kali)-[~/…/seed-labs/category-crypto/Crypto_Hash_Length_Ext/Labsetup]
+└─$ curl http://www.seedlab-hashlen.com/\?myname=RuiPinto\&uid=1001\&lstcmd=1\&mac=3623873a13d12ade69a3db951b175e0c45f981dfde706b6356bfae88a7b1c5df
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Length Extension Lab</title>
+</head>
+<body>
+    <nav class="navbar fixed-top navbar-light" style="background-color: #3EA055;">
+        <a class="navbar-brand" href="#" >
+            SEEDLabs
+        </a>
+    </nav>
+
+    <div style="padding-top: 50px; text-align: center;">
+        <h2><b>Hash Length Extension Attack Lab</b></h2>
+        <div style="max-width: 35%; text-align: center; margin: auto;">
+            
+                <b>Yes, your MAC is valid</b>
+                
+                    <h3>List Directory</h3>
+                    <ol>
+                        
+                            <li>secret.txt</li>
+                        
+                            <li>key.txt</li>
+                        
+                    </ol>
+                
+
+                
+            
+        </div>
+    </div>
+</body>
+</html> 
+```
+
+And indeed, our MAC is valid and we're able to see both the `secret.txt` and the `key.txt` files.
+
+To also download the `secret.txt` file, we use the command `myname=RuiPinto&uid=1001&lstcmd=0&download=secret.txt`. To compute the MAC of this message using HMAC, we just change the previous python script `message` variable to:
+
+```python
+message='myname=RuiPinto&uid=1001&lstcmd=0&download=secret.txt'
+```
+
+Running the script again gives us the following MAC:
+
+```
+┌──(kali㉿kali)-[~/…/seed-labs/category-crypto/Crypto_Hash_Length_Ext/Labsetup]
+└─$ python3 hmac_calc.py
+0d3bdbdc18c282a5f5f7fdb046806a831c355a775fec5d3637d180a8d8cacadd
+```
+
+We then obtain the following URL to access: http://www.seedlab-hashlen.com/?myname=RuiPinto&uid=1001&lstcmd=0&download=secret.txt&mac=0d3bdbdc18c282a5f5f7fdb046806a831c355a775fec5d3637d180a8d8cacadd.
+
+```
+┌──(kali㉿kali)-[~/…/seed-labs/category-crypto/Crypto_Hash_Length_Ext/Labsetup]
+└─$ curl http://www.seedlab-hashlen.com/\?myname=RuiPinto\&uid=1001\&lstcmd=0\&download=secret.txt\&mac=0d3bdbdc18c282a5f5f7fdb046806a831c355a775fec5d3637d180a8d8cacadd
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Length Extension Lab</title>
+</head>
+<body>
+    <nav class="navbar fixed-top navbar-light" style="background-color: #3EA055;">
+        <a class="navbar-brand" href="#" >
+            SEEDLabs
+        </a>
+    </nav>
+
+    <div style="padding-top: 50px; text-align: center;">
+        <h2><b>Hash Length Extension Attack Lab</b></h2>
+        <div style="max-width: 35%; text-align: center; margin: auto;">
+            
+                <b>Yes, your MAC is valid</b>
+                
+
+                
+                    <h3>File Content</h3>
+                    
+                        <p>TOP SECRET.</p>
+                    
+                        <p>DO NOT DISCLOSE.</p>
+                    
+                        <p></p>
+                    
+                
+            
+        </div>
+    </div>
+</body>
+</html> 
+```
+
+And indeed again, the computed MAC is valid and we're able to see the contents of the `secret.txt` file.
+
+At last, it's important to mention that a Hash Length Extension Attack against this way of calculating the message's MAC will fail when both client and server use HMAC. To demonstrate this, we first explain how HMAC works, and again, we present an image for that:
+
+![](images/img2.png)
+
+HMAC uses two passes of hash computation, an inner hash, and an outer hash. The inner hash performs `H(K ⊕ ipad, message)`, being `K` the key used. The result of this hash (let us call it `h`) is fed into the outer hash `H(K ⊕ opad, h)`. The `ipad` and `opad` are both constants, where `ipad` equals the byte `0x36` repeated `B` times, being `B` the size of the block used by `H`'s compression function, in this case, SHA-256, while `opad` equals to the byte `0x5c` repeated B times, as well. The reason why the Hash Length Extension Attack with extra commands doesn't work here is that we can't simply extend the content of the message due to the fact that inside the HMAC algorithm the message digest is hashed twice by the compression function SHA-256 that as it's one-way it can't be inverted. So the logic of reusing the previously mentioned intermediate state to extend the message falls apart, and consequently we won't be able to perform this attack. At first, the HMAC algorithm will produce an internal which comes from the inner key (`K ⊕ ipad` and then, at the second time, the MAC is made from this result plus the outer key (`K ⊕ opad`), making the algorithm immune to Length Extension attacks.
