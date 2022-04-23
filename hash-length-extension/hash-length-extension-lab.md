@@ -123,7 +123,7 @@ Calculating the MAC for this message follows the same logic as explained before:
 bb72f8627d5a19916b66b5236aa19273b25e32063e72d4dfef2670aa58d4a0c7  -
 ```
 
-Upon receiving a message multiple of its block size (64 bytes), as is the case, SHA-256 will generate further padding to it. IN SHA-256, for each block, the message can only be 440 bits long. That's because each block has 512 bits and the last 64 bits are left to the length of the message. That leaves us with 512 - 64 = 448. If the message is 440 bits long, that leaves 8 bits that need to be filled by padding to make 448 bits. The `0x80` (`10000000`, considering the **Unicode** character standard as it's always encoded in a multiple of 8 bits) will take care of that. This amounts to 512 bits (440 + 8 + 64). If the message is 448 bits long, that leaves 0 bits for padding, which won't do any good because the `1` bit is needed to separate the message from the padding. So even if we could add just a `1` bit with no trailing zeros, we'd still be at >512 bits (448 + 1 + 64 = 513). This puts the number of bits needed over the threshold of 512, which means another message block is needed. So, the `0x80` won't create an overflow of zeros as another message block needs to be created anyways. And that's exactly what happens in this situation.
+Upon receiving a message multiple of its block size (64 bytes), as is the case, SHA-256 will generate further padding to it. In SHA-256, **for each block**, the message can only be 440 bits long. That's because each block has 512 bits and the last 64 bits are left to the length of the message. That leaves us with 512 - 64 = 448. If the message is 440 bits long, that leaves 8 bits that need to be filled by padding to make 448 bits. The `0x80` (`10000000`, considering the **Unicode** character standard as it's always encoded in a multiple of 8 bits) will take care of that. This amounts to 512 bits (440 + 8 + 64). If the message is 448 bits long, that leaves 0 bits for padding, which won't do any good because the `1` bit is needed to separate the message from the padding. So even if we could add just a `1` bit with no trailing zeros, we'd still be at >512 bits (448 + 1 + 64 = 513). This puts the number of bits needed over the threshold of 512, which means another message block is needed. So, the `0x80` won't create an overflow of zeros as another message block needs to be created anyways. And that's exactly what happens in this situation. Note that SHA-256 supports messages of a size up to (2^64 - 1) bits. In case the message is longer than 440 bits multiple blocks would need to be added.
 
 When testing the generated MAC, we can see we get a message saying the MAC we calculated is valid. Note that the `\x` in the hexadecimal characters needs to be replaced by `%`, so for example, `\x80`, becomes `%80`.
 
@@ -160,7 +160,7 @@ When testing the generated MAC, we can see we get a message saying the MAC we ca
 
 ## Task 3
 
-In this task, we are asked to generate a valid MAC for a URL without knowing the MAC key. We assume we know the MAC of a valid message R, and also the size of the MAC key. With the Length Extension Attack, it's possible to add a message to the end of the initial message and compute its MAC without knowing the secret MAC key.
+In this task, we are asked to generate a valid MAC for a URL without knowing the MAC key. We assume we know the MAC of a valid message `R`, and also the size of the MAC key. With the Length Extension Attack, it's possible to add a message to the end of the initial message and compute its MAC without knowing the secret MAC key.
 
 First we calculate a MAC for the string `123456:myname=RuiPinto&uid=1001&lstcmd=1`:
 
@@ -227,8 +227,7 @@ eb71f88b08909fa9fe582c994a6f620b739045287104bf44fad9a2d0e28d6bf3
 As the script calculates the new MAC based on the previous MAC, we need to add the padding of the initial string message to the URL so that it has the following format:
 
 ```
-http://www.seedlab-hashlen.com/?myname=<name>&uid=<uid>
-&lstcmd=1<padding>&download=secret.txt&mac=<new-mac>
+http://www.seedlab-hashlen.com/?myname=<name>&uid=<uid>&lstcmd=1<padding>&download=secret.txt&mac=<new-mac>
 ```
 
 As calculated in task 2, the initial message with padding is as follows:
@@ -311,7 +310,7 @@ for(i=0; i<64; i++)
   SHA256_Update(&c, "*", 1);
 ```
 
-64 bytes in this case. This value is very important because it guarantees that when our message is padded we use the 64 bytes of the `K || M || P` part, in our case, and then the next 20 bytes (`T`) with the string `&download=secret.txt` so that later on, the padding for the whole message is calculated as a multiple of 512 bits and with the 64-bit value at the final part of the padding having a value of 84 bytes * 8 = 672 bits(64 + 20 = 80 bytes).
+64 bytes in this case. This value is very important because it guarantees that when our message is padded we use the 64 bytes of the `K || M || P` part, in our case, and then the next 20 bytes (`T`) with the string `&download=secret.txt` so that later on, the padding for the whole message is calculated as a multiple of 512 bits and with the 64-bit value at the final part of the padding having a value of 84 bytes * 8 = 672 bits (64 + 20 = 84 bytes).
 
 ## Task 4
 
@@ -390,7 +389,7 @@ We then obtain the following URL to access: http://www.seedlab-hashlen.com/?myna
 </html> 
 ```
 
-And indeed, our MAC is valid and we're able to see both the `secret.txt` and the `key.txt` files.
+And indeed, our MAC is valid and we're able to see both the `secret.txt` and the `key.txt` files listed.
 
 To also download the `secret.txt` file, we use the command `myname=RuiPinto&uid=1001&lstcmd=0&download=secret.txt`. To compute the MAC of this message using HMAC, we just change the previous python script `message` variable to:
 
@@ -454,4 +453,4 @@ At last, it's important to mention that a Hash Length Extension Attack against t
 
 ![](images/img2.png)
 
-HMAC uses two passes of hash computation, an inner hash, and an outer hash. The inner hash performs `H(K ⊕ ipad, message)`, being `K` the key used. The result of this hash (let us call it `h`) is fed into the outer hash `H(K ⊕ opad, h)`. The `ipad` and `opad` are both constants, where `ipad` equals the byte `0x36` repeated `B` times, being `B` the size of the block used by `H`'s compression function, in this case, SHA-256, while `opad` equals to the byte `0x5c` repeated B times, as well. The reason why the Hash Length Extension Attack with extra commands doesn't work here is that we can't simply extend the content of the message due to the fact that inside the HMAC algorithm the message digest is hashed twice by the compression function SHA-256 that as it's one-way it can't be inverted. So the logic of reusing the previously mentioned intermediate state to extend the message falls apart, and consequently we won't be able to perform this attack. At first, the HMAC algorithm will produce an internal which comes from the inner key (`K ⊕ ipad`) and then, at the second time, the MAC is made from this result plus the outer key (`K ⊕ opad`), making the algorithm immune to Length Extension attacks.
+HMAC uses two passes of hash computation, an inner hash, and an outer hash. The inner hash performs `H(K ⊕ ipad, message)`, being `K` the key used. The result of this hash (let us call it `h`) is fed into the outer hash `H(K ⊕ opad, h)`. The `ipad` and `opad` are both constants, where `ipad` equals the byte `0x36` repeated `B` times, being `B` the size of the block used by `H`'s compression function, in this case, SHA-256, while `opad` equals to the byte `0x5c` repeated B times, as well. The reason why the Hash Length Extension Attack with extra commands doesn't work here is that we can't simply extend the content of the message due to the fact that inside the HMAC algorithm the message is hashed twice by the compression function SHA-256 that, as it's a one-way function, it can't be inverted. So the logic of reusing the previously mentioned intermediate state to extend the message falls apart, and consequently we won't be able to perform this attack. At first, the HMAC algorithm will produce an internal hash which comes from the inner key (`K ⊕ ipad`) and then, at the second time, the MAC is made from this result plus the outer key (`K ⊕ opad`), making the algorithm immune to Length Extension attacks.
