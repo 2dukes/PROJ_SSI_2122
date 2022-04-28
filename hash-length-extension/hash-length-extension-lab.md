@@ -397,7 +397,7 @@ To also download the `secret.txt` file, we use the command `myname=RuiPinto&uid=
 message='myname=RuiPinto&uid=1001&lstcmd=0&download=secret.txt'
 ```
 
-Running the script again gives us the following MAC:
+Running the script again gives us the following HMAC:
 
 ```
 ┌──(kali㉿kali)-[~/…/seed-labs/category-crypto/Crypto_Hash_Length_Ext/Labsetup]
