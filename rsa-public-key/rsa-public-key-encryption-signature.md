@@ -304,11 +304,11 @@ As it can be seen the decrypted text in hexadecimal format is `50617373776F72642
 Password is dees
 ```
 
-The decipher text is "Password is dees".
+The deciphered text is "Password is dees".
 
 ## Task 4
 
-In this task we are asked to sign a message. Note that this signature should be directly applied to the message and not to its hash value, as its commonly done due to the long dimension that some messages might have. For a message `m` that needs to be signed, we need to follow the equation `s = m^d mod n` using our private key `d`, and `s` will serve as our signature on the message.
+In this task, we are asked to sign a message. Note that this signature should be directly applied to the message and not to its hash value, as it's commonly done due to the long dimension that some messages might have. For a message `m` that needs to be signed, we need to follow the equation `s = m^d mod n` using our private key `d`, and `s` will serve as our signature on the message.
 
 For the message "I owe you $2000." we first need to convert it to hexadecimal format:
 
@@ -393,4 +393,93 @@ And compiling and running the script again:
 Signature:  BCC20FB7568E5D48E434C387C06A6025E90D29D848AF9C3EBAC0135D99305822
 ```
 
-We get this new signature: `BCC20FB7568E5D48E434C387C06A6025E90D29D848AF9C3EBAC0135D99305822` which is completely different from the previous one, as expected. A slight change in the message produces a totally different signature.
+We get this new signature: `BCC20FB7568E5D48E434C387C06A6025E90D29D848AF9C3EBAC0135D99305822` which is completely different from the previous one, as expected. A slight change in the message produces a different signature.
+
+## Task 5
+
+In this task, we are asked to verify a signature given an original message "Launch a missile.". Knowing the parameters `e` and `n`, part of the RSA public key and the signature value obtained using an unknown private key we can verify that the signature `643D6F34902D9C7EC90CB0B2BCA36C47FA37165C0005CAB026C0542CBDB6802F` comes from the message "Launch a missile." using the public key. 
+
+First, we calculate the hexadecimal format of the given message:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ python -c 'print("Launch a missile.".encode("utf-8").hex())'
+4c61756e63682061206d697373696c652e
+```
+
+After that, we developed a C script that calculates `s^e mod n`. The result is the content of the original message before being signed. If this result matches the output of the "Launch a missile." in hexadecimal format, then we can firmly state that the signature matches! To prove that, we developed another C script:
+
+```c
+#include <stdio.h>
+#include <openssl/bn.h>
+
+#define NBITS 256
+
+void printBN(char *msg, BIGNUM * a)
+{
+    char * number_str = BN_bn2hex(a);
+    printf("%s %s\n", msg, number_str);
+    OPENSSL_free(number_str);
+}
+
+int main ()
+{
+    BN_CTX *ctx = BN_CTX_new();
+    BIGNUM *e = BN_new();
+    BIGNUM *n = BN_new();
+    BIGNUM *m = BN_new();
+    BIGNUM *s = BN_new();
+    BIGNUM *new_m = BN_new();
+
+    // Initialize n, d, e, m
+    BN_hex2bn(&n, "AE1CD4DC432798D933779FBD46C6E1247F0CF1233595113AA51B450F18116115");
+    BN_hex2bn(&s, "643D6F34902D9C7EC90CB0B2BCA36C47FA37165C0005CAB026C0542CBDB6802F");
+    BN_hex2bn(&e, "010001");
+    BN_hex2bn(&m, "4c61756e63682061206d697373696c652e");
+
+    // Verify Signature: Calculate s^e mod n
+    BN_mod_exp(new_m, s, e, n, ctx);
+    printBN("Signature Verification : ", new_m);
+
+    if(BN_cmp(m, new_m) == 0)
+        printf("Signature matches!");
+    else 
+        printf("Signature doesn't match!");
+
+    return 0;
+}
+```
+
+Compiling and running it:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ gcc task5.c -o task5 -lcrypto
+                                                                                                                   
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ ./task5                      
+Signature Verification :  4C61756E63682061206D697373696C652E
+Signature matches!
+```
+
+We can see that the signature matches!
+
+If we modified the signature one small bit such that the last byte was `3F` instead of `2F` then our obtained message wouldn't match the original message, as the signature would become invalid. To verify this we only change the initialization of the variable `s` in the previous script to:
+
+```c
+BN_hex2bn(&s, "643D6F34902D9C7EC90CB0B2BCA36C47FA37165C0005CAB026C0542CBDB6803F");
+```
+
+And then we compile and run the program again:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ gcc task5.c -o task5 -lcrypto
+                                                                                                                   
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ ./task5                      
+Signature Verification :  91471927C80DF1E42C154FB4638CE8BC726D3D66C83A4EB6B7BE0203B41AC294
+Signature doesn't match!
+```
+
+The obtained message `91471927C80DF1E42C154FB4638CE8BC726D3D66C83A4EB6B7BE0203B41AC294` is very different from the original one `643D6F34902D9C7EC90CB0B2BCA36C47FA37165C0005CAB026C0542CBDB6802F`, thus we can state that after aplying the RSA public key on the signature, we get a block of data that is significantly different from the original one.
