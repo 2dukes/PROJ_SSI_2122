@@ -244,3 +244,64 @@ Decryption:  4120746F702073656372657421
 ```
 
 We can indeed see the encrypted message being `6FB078DA550B2650832661E14F4F8D2CFAEF475A0DF3A75CACDC5DE5CFC5FADC` in hexadecimal format and the decrypted message being `4120746F702073656372657421` which is exactly what we obtained using that short python line at the beginning of this task.
+
+## Task 3
+
+In this task, contrary to what we were asked in the previous task we have to decrypt a message. Using the parameters `n`, `e` and `d` given, and knowing the ciphertext `c` is `8C0F971DF2F3672B28811407E2DABBE1DA0FEBBBDFC7DCB67396567EA1E2493F`, we just need to use the formula `c^d mod n` and we get the decrypted text according to the RSA algorithm. For this, we developed a C script that takes the given arguments and calculates the decrypted text in hexadecimal format. The script is as follows:
+
+```c
+#include <stdio.h>
+#include <openssl/bn.h>
+
+#define NBITS 256
+
+void printBN(char *msg, BIGNUM * a)
+{
+    char * number_str = BN_bn2hex(a);
+    printf("%s %s\n", msg, number_str);
+    OPENSSL_free(number_str);
+}
+
+int main ()
+{
+    BN_CTX *ctx = BN_CTX_new();
+    BIGNUM *e = BN_new();
+    BIGNUM *d = BN_new();
+    BIGNUM *n = BN_new();
+    BIGNUM *m = BN_new();
+    BIGNUM *c = BN_new();
+
+    // Initialize n, m, e, d
+    BN_hex2bn(&n, "DCBFFE3E51F62E09CE7032E2677A78946A849DC4CDDE3A4D0CB81629242FB1A5");
+    BN_hex2bn(&d, "74D806F9F3A62BAE331FFE3F0A68AFE35B3D2E4794148AACBC26AA381CD7D30D");
+    BN_hex2bn(&e, "010001");
+    BN_hex2bn(&c, "8C0F971DF2F3672B28811407E2DABBE1DA0FEBBBDFC7DCB67396567EA1E2493F");
+
+    // Decryption: Calculate c^d mod n
+    BN_mod_exp(m, c, d, n, ctx);
+    printBN("Decryption: ", m);
+
+    return 0;
+}
+```
+
+Compiling and running:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ gcc task3.c -o task3 -lcrypto
+                                                                                                                   
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ ./task3                      
+Decryption:  50617373776F72642069732064656573
+```
+
+As it can be seen the decrypted text in hexadecimal format is `50617373776F72642069732064656573`. Converting this to ASCII format can be done using the following python code:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ python -c 'print(bytearray.fromhex("50617373776F72642069732064656573").decode())'
+Password is dees
+```
+
+The decipher text is "Password is dees".
