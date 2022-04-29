@@ -9,7 +9,7 @@ This week's suggested lab was RSA (Rivest-Shamir-Adleman) Public-Key Encryption 
 
 # Introduction
 
-In this lab we seek to gain hands-on experience on the RSA algorithm. Besides that, this lab covers the follwoing topics:
+In this lab, we seek to gain hands-on experience with the RSA algorithm. Besides that, this lab covers the following topics:
 
 - Public-key cryptography.
 - The RSA algorithm and key generation.
@@ -20,7 +20,7 @@ In this lab we seek to gain hands-on experience on the RSA algorithm. Besides th
 
 ## Background
 
-Typically, the RSA algorithm involves computations on large numbers. And these computations involve more than 32-bit or 64-bit numbers. Most of the time, these numbers are more than 512 bits long. To perform arithmetic operations in these numbers we'll use the Big Number library provided by *openssl* that has an API that enables us to do those computations. We are presented a simple script where three `BIGNUM` variables, a, b, and n are initialized, and the we compute `a * b` and `a^b mod n`. The script is as follows:
+Typically, the RSA algorithm involves computations on large numbers. And these computations involve more than 32-bit or 64-bit numbers. Most of the time, these numbers are more than 512 bits long. To perform arithmetic operations in these numbers we'll use the Big Number library provided by *openSSL* that has an API that enables us to do those computations. We were presented a simple script where three `BIGNUM` variables, a, b, and n are initialized, and we compute `a * b` and `a^b mod n`. The script is as follows:
 
 ```c
 #include <stdio.h>
@@ -81,13 +81,13 @@ Indeed, the results of the computations are much larger than 32-bit or 64-bit nu
 
 # Task 1
 
-In the first task we are asked to derive the private key of RSA given the `p`, `q`, and `e` prime numbers, such that `n = p * q` and `(e, n)` is the public key. `n` is the so-called modulus, `e` is the publick key exponent, and the private key (exponent) is `d`. The RSA key generation process works as follows:
+In the first task we are asked to derive the private key of RSA given the `p`, `q`, and `e` prime numbers, such that `n = p * q` and `(e, n)` is the public key. `n` is the so-called modulus, `e` is the public key exponent, and the private key (exponent) is `d`. The RSA key generation process works as follows:
 - Choose two large random prime numbers, `p` and `q`.
 - Compute `n = p * q`. This number is the modulus for the public key and private key. To be secure, `n` needs to be large. In our task, we already have `p` and `q`, so we can calculate `n`.
-- Select an integer `e`, such that `1 < e < ¢(n)`, and `e` is relatively prime to `¢(n)`, meaning the greates common divisor (gcd) of `e` and `¢(n)` is one. This number is called public key exponent, and it is made public. This number does not need to be large; in practice, many publick keys choose `e = 65537`, which is a prime number. In practice, we find `e` first, and then generate `p` and `q`. If `¢(p * q)` and `e` are not relatively prime, we will pick another `p` and/or `q`, until the condition is met.
-- Lastly, we find `d`, such that `e * d mod ¢(n) = 1`. We can use the extended Euclidean algorithm to get `d`. This number is called private key exponent, and it is kept as a secret.
+- Select an integer `e`, such that `1 < e < ¢(n)`, and `e` is relatively prime to `¢(n)`, meaning the greatest common divisor (gcd) of `e` and `¢(n)` is one. This number is called the public key exponent, and it is made public. This number does not need to be large; in practice, many public keys choose `e = 65537`, which is a prime number. In practice, we find `e` first, and then generate `p` and `q`. If `¢(p * q)` and `e` are not relatively prime, we will pick another `p` and/or `q`, until the condition is met. Also, it's important to note that this `¢(n)` is Euler's totient function and counts the positive integers up to a given integer `n` that are relatively prime to `n`.
+- Lastly, we find `d`, such that `e * d mod ¢(n) = 1`. We can use the extended Euclidean algorithm to get `d`. This number is called the private key exponent, and it is kept a secret.
 
-Knowing the three prime number we were given, we can find the value of `d`. Even given `e` and `n` it is possible to get `p` and `q`, but factoring a large number is a difficult problem, and there's no efficient way to do that yet. Factoring a 2048-bit number is considered infeasible using today's computer power. It is based on this that the RSA algorithm security stands.
+Knowing the three prime numbers we were given, we can find the value of `d`. Even given `e` and `n` it is possible to get `p` and `q`, but factoring a large number is a difficult problem, and there's no efficient way to do that yet. Factoring a 2048-bit number is considered infeasible using today's computer power. It is based on this that the RSA algorithm security stands.
 
 Note the way `¢(n)` is calculated is as follows:
 
