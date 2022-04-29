@@ -20,7 +20,7 @@ In this lab, we seek to gain hands-on experience with the RSA algorithm. Besides
 
 ## Background
 
-Typically, the RSA algorithm involves computations on large numbers. And these computations involve more than 32-bit or 64-bit numbers. Most of the time, these numbers are more than 512 bits long. To perform arithmetic operations in these numbers we'll use the Big Number library provided by *openSSL* that has an API that enables us to do those computations. We were presented a simple script where three `BIGNUM` variables, a, b, and n are initialized, and we compute `a * b` and `a^b mod n`. The script is as follows:
+Typically, the RSA algorithm involves computations on large numbers. And these computations involve more than 32-bit or 64-bit numbers. Most of the time, these numbers are more than 512 bits long. To perform arithmetic operations in these numbers we'll use the Big Number library provided by *OpenSSL* that has an API that enables us to do those computations. We were presented a simple script where three `BIGNUM` variables, a, b, and n are initialized, and we compute `a * b` and `a^b mod n`. The script is as follows:
 
 ```c
 #include <stdio.h>
@@ -175,3 +175,72 @@ d =  3587A24598E5F2A21DB007D89D18CC50ABA5075BA19A33890FE7C28A9B496AEB
 ```
 
 ## Task 2
+
+For this task, given the public key `(e, n)`, the decryption key `d` for verification purposes, and a message "A top secret!" we need to encrypt this message using the RSA algorithm.
+
+First, we convert our message to hexadecimal format:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ python -c 'print("A top secret!".encode("utf-8").hex())'
+4120746f702073656372657421
+```
+
+The output is `4120746f702073656372657421`, as can be seen.
+
+With this in mind, we developed a script that takes the aforementioned values and encrypts our message using the equation `c = m^e mod n` and also decrypts it for verification purposes using the equation `m = c^d mod n`. The script is as follows:
+
+```c
+#include <stdio.h>
+#include <openssl/bn.h>
+
+#define NBITS 256
+
+void printBN(char *msg, BIGNUM * a)
+{
+    char * number_str = BN_bn2hex(a);
+    printf("%s %s\n", msg, number_str);
+    OPENSSL_free(number_str);
+}
+
+int main ()
+{
+    BN_CTX *ctx = BN_CTX_new();
+    BIGNUM *e = BN_new();
+    BIGNUM *d = BN_new();
+    BIGNUM *n = BN_new();
+    BIGNUM *m = BN_new();
+    BIGNUM *c = BN_new();
+    BIGNUM *new_m = BN_new();
+
+    // Initialize n, m, e, d
+    BN_hex2bn(&n, "DCBFFE3E51F62E09CE7032E2677A78946A849DC4CDDE3A4D0CB81629242FB1A5");
+    BN_hex2bn(&m, "4120746f702073656372657421");
+    BN_hex2bn(&e, "010001");
+    BN_hex2bn(&d, "74D806F9F3A62BAE331FFE3F0A68AFE35B3D2E4794148AACBC26AA381CD7D30D");
+
+    // Encryption: Calculate m^e mod n
+    BN_mod_exp(c, m, e, n, ctx);
+    printBN("Encryption: ", c);
+
+    // Decryption: Calculate c^d mod n (Verification)
+    BN_mod_exp(new_m, c, d, n, ctx);
+    printBN("Decryption: ", new_m);
+
+    return 0;
+}
+```
+
+Compiling and running it:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ gcc task2.c -o task2 -lcrypto
+                                                                                                                    
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ ./task2
+Encryption:  6FB078DA550B2650832661E14F4F8D2CFAEF475A0DF3A75CACDC5DE5CFC5FADC
+Decryption:  4120746F702073656372657421
+```
+
+We can indeed see the encrypted message being `6FB078DA550B2650832661E14F4F8D2CFAEF475A0DF3A75CACDC5DE5CFC5FADC` in hexadecimal format and the decrypted message being `4120746F702073656372657421` which is exactly what we obtained using that short python line at the beginning of this task.
