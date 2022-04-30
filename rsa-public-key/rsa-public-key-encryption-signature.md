@@ -870,7 +870,7 @@ Certificate:
          bd:5f:b1:b4
 ```
 
-The final part name "Signature Algorithm: sha256WithRSAEncryption" holds the value we want. To remove delete the "space" and ":" from the data we can first save the signature to a file named `signature`, and then use the `tr` command.
+The final part name "Signature Algorithm: sha256WithRSAEncryption" holds the value we want. To remove delete the "space" and ":" from the data, we can first save the signature to a file named `signature`, and then use the `tr` command.
 
 ```
 ┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
@@ -1059,4 +1059,51 @@ Hash Value: 76F1D7A395BEDD4008CE2398487B98E2DAD6513CF28205B16C9DDBB781462C72
 Signature matches!
 ```
 
-We can observe that the first output ("Signature Verification") gives us the message that was signed but is padded. To fetch the 256 bits of the `sha256sum` we used the `BN_mask_bits` function that will truncate the hash value. We can then see that the signature is valid, as the hash of the server's certificate is indeed the same as obtained.
+We can observe that the first output ("Signature Verification") gives us the message that was signed but is padded, as we will further detail. To fetch the 256 bits of the `sha256sum` we used the `BN_mask_bits` function that will truncate the hash value. We can then see that the signature is valid, as the hash of the server's certificate is indeed the same as obtained.
+
+As a side note, we can confirm this output is correct by following some steps:
+- Obtain the intermediate CA public key. We can do this by typing:
+
+```
+openssl x509 -pubkey -noout -in c1.pem > CA_pub.pem
+```
+
+- Change the signature in the server's certificate to binary format:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ cat signature | tr -d '[:space:]:' | xxd -r -p > new_signature.bin
+```
+
+- Verify the hash of the body of the server's certificate using the following command:
+
+```
+┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
+└─$ openssl rsautl -verify -inkey CA_pub.pem -in new_signature.bin -pubin -raw | xxd
+00000000: 0001 ffff ffff ffff ffff ffff ffff ffff  ................
+00000010: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000020: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000030: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000040: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000050: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000060: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000070: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000080: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+00000090: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+000000a0: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+000000b0: ffff ffff ffff ffff ffff ffff ffff ffff  ................
+000000c0: ffff ffff ffff ffff ffff ffff 0030 3130  .............010
+000000d0: 0d06 0960 8648 0165 0304 0201 0500 0420  ...`.H.e....... 
+000000e0: 76f1 d7a3 95be dd40 08ce 2398 487b 98e2  v......@..#.H{..
+000000f0: dad6 513c f282 05b1 6c9d dbb7 8146 2c72  ..Q<....l....F,r
+```
+
+We can indeed see that this output matches the output's first line of the execution of the C script of this task, meaning the last 256 bits are the hash we are looking for. With this, we prove that our code is correct and that the server's certificate was indeed signed by the intermediate CA.
+
+Also, note that the reason why this padding is a bit weird is that it follows the PKCS#1 1.5 format. So, when signing a message, you take the hash of the message you want to sign, as already explained, and then you encode it using the following format:
+
+```
+00 01 FF FF ... FF FF 00 ASN.1 HASH
+```
+
+Here, `ASN.1` is a very complex binary encoding of the hash type and length, the BER-encoded hash identifier. `FF` bytes provide padding to make the message exactly as long as the modulus `N`. After this, we sign the encoding with RSA. 
