@@ -1103,7 +1103,9 @@ We can indeed see that this output matches the output's first line of the execut
 Also, note that the reason why this padding is a bit weird is that it follows the PKCS#1 1.5 format. So, when signing a message, you take the hash of the message you want to sign, as already explained, and then you encode it using the following format:
 
 ```
-00 01 FF FF ... FF FF 00 ASN.1 HASH
+X'00' || BT || PS || X'00' || D
 ```
 
-Here, `ASN.1` is a very complex binary encoding of the hash type and length, the BER-encoded hash identifier. `FF` bytes provide padding to make the message exactly as long as the modulus `N`. After this, we sign the encoding with RSA. 
+Here, `BT` is the block type, X'00', X'01', or X'02'. `PS` is the padding of as many bytes as required to make the block the same length as the modulus of the RSA key. Padding of X'00' is used for block type 0, X'FF' for block type 1 (our case), and random and non-X'00' for block type 2. The length of `PS` must be a minimum of eight bytes. Lastly, `D` is the key, or the concatenation of the BER-encoded hash identifier and the hash value. This BER-encoded hash identifier is a very complex binary encoding of the hash type and length. In our case, we indeed have the BER-encoded hash identifier plus the hash value.
+
+After the padding, we sign the encoding using the RSA algorithm. 
