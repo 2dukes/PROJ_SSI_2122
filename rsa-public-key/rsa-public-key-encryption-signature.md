@@ -101,7 +101,7 @@ Substituting the right arguments (`a` for `e`, `x` for `d` and `b` for `¢(n)`):
 
 `e * d + ¢(n) * y = gcd(e, ¢(n)) = 1`
 
-Dividing everything by `mod ¢(n)`, we get:
+Applying `mod ¢(n)` on both sides, we get:
 
 `e * d mod ¢(n) = 1`
 
@@ -431,7 +431,7 @@ int main ()
     BIGNUM *s = BN_new();
     BIGNUM *new_m = BN_new();
 
-    // Initialize n, d, e, m
+    // Initialize n, s, e, m
     BN_hex2bn(&n, "AE1CD4DC432798D933779FBD46C6E1247F0CF1233595113AA51B450F18116115");
     BN_hex2bn(&s, "643D6F34902D9C7EC90CB0B2BCA36C47FA37165C0005CAB026C0542CBDB6802F");
     BN_hex2bn(&e, "010001");
@@ -870,7 +870,7 @@ Certificate:
          bd:5f:b1:b4
 ```
 
-The final part name "Signature Algorithm: sha256WithRSAEncryption" holds the value we want. To remove delete the "space" and ":" from the data, we can first save the signature to a file named `signature`, and then use the `tr` command.
+The final part name "Signature Algorithm: sha256WithRSAEncryption" holds the value we want. To delete the "space" and ":" from the data, we can first save the signature to a file named `signature`, and then use the `tr` command.
 
 ```
 ┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
@@ -972,7 +972,7 @@ Then we need to extract the body of the server's certificate. This is because a 
  2004:d=1  hl=4 l= 257 prim:  BIT STRING
 ```
 
-The field starting from the line `4:d=1  hl=4 l=1981 cons:  SEQUENCE` denotes the body of the certificate that is used to generate the hash. The field starting from the line `1989:d=1  hl=2 l=  13 cons:  SEQUENCE` is the signature block. So, the certificate body is from offset 4 to 1988, while the signature block is from 11989 to the end of the file. Getting the body of the certificate, excluding the signature block can be done in the following way:
+The field starting from the line `4:d=1  hl=4 l=1981 cons:  SEQUENCE` denotes the body of the certificate that is used to generate the hash. The field starting from the line `1989:d=1  hl=2 l=  13 cons:  SEQUENCE` is the signature block. So, the certificate body is from offset 4 to 1988, while the signature block is from 1989 to the end of the file. Getting the body of the certificate, excluding the signature block can be done in the following way:
 
 ```
 ┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
