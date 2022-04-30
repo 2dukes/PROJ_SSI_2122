@@ -85,7 +85,7 @@ In the first task we are asked to derive the private key of RSA given the `p`, `
 - Choose two large random prime numbers, `p` and `q`.
 - Compute `n = p * q`. This number is the modulus for the public key and private key. To be secure, `n` needs to be large. In our task, we already have `p` and `q`, so we can calculate `n`.
 - Select an integer `e`, such that `1 < e < ¢(n)`, and `e` is relatively prime to `¢(n)`, meaning the greatest common divisor (gcd) of `e` and `¢(n)` is one. This number is called the public key exponent, and it is made public. This number does not need to be large; in practice, many public keys choose `e = 65537`, which is a prime number. In practice, we find `e` first, and then generate `p` and `q`. If `¢(p * q)` and `e` are not relatively prime, we will pick another `p` and/or `q`, until the condition is met. Also, it's important to note that this `¢(n)` is Euler's totient function and counts the positive integers up to a given integer `n` that are relatively prime to `n`.
-- Lastly, we find `d`, such that `e * d mod ¢(n) = 1`. We can use the extended Euclidean algorithm to get `d`. This number is called the private key exponent, and it is kept a secret.
+- Lastly, we find `d`, such that `e * d mod ¢(n) = 1`. We can use the Extended Euclidean algorithm to get `d`. This number is called the private key exponent, and it is kept a secret.
 
 Knowing the three prime numbers we were given, we can find the value of `d`. Even given `e` and `n` it is possible to get `p` and `q`, but factoring a large number is a difficult problem, and there's no efficient way to do that yet. Factoring a 2048-bit number is considered infeasible using today's computer power. It is based on this that the RSA algorithm security stands.
 
@@ -97,7 +97,7 @@ Also, for the equation `e * d mod ¢(n) = 1` used in RSA, it comes from the calc
 
 `a * x + b * y = gcd(a, b)`
 
-Substituting the right arguments:
+Substituting the right arguments (`a` for `e`, `x` for `d` and `b` for `¢(n)`):
 
 `e * d + ¢(n) * y = gcd(e, ¢(n)) = 1`
 
@@ -393,7 +393,7 @@ And compiling and running the script again:
 Signature:  BCC20FB7568E5D48E434C387C06A6025E90D29D848AF9C3EBAC0135D99305822
 ```
 
-We get this new signature: `BCC20FB7568E5D48E434C387C06A6025E90D29D848AF9C3EBAC0135D99305822` which is completely different from the previous one, as expected. A slight change in the message produces a different signature.
+We get this new signature: `BCC20FB7568E5D48E434C387C06A6025E90D29D848AF9C3EBAC0135D99305822` which is completely different from the previous one, as expected. A slight change in the message produces a different signature. This confers some collision resistance to the algorithm since there's no apparent correlation between the original message and the generated signature.
 
 ## Task 5
 
@@ -870,7 +870,7 @@ Certificate:
          bd:5f:b1:b4
 ```
 
-The final part name "Signature Algorithm: sha256WithRSAEncryption holds the value we want. To remove delete the "space" and ":" from the data we can first save the signature to a file named `signature`, and then use the `tr` command.
+The final part name "Signature Algorithm: sha256WithRSAEncryption" holds the value we want. To remove delete the "space" and ":" from the data we can first save the signature to a file named `signature`, and then use the `tr` command.
 
 ```
 ┌──(kali㉿kali)-[~/Documents/seed-labs/category-crypto/Crypto_RSA]
@@ -1023,7 +1023,7 @@ int main ()
     BIGNUM *s = BN_new();
     BIGNUM *new_m = BN_new();
 
-    // Initialize n, d, e, m
+    // Initialize n, s, e, m
     BN_hex2bn(&n, "DCAE58904DC1C4301590355B6E3C8215F52C5CBDE3DBFF7143FA642580D4EE18A24DF066D00A736E1198361764AF379DFDFA4184AFC7AF8CFE1A734DCF339790A2968753832BB9A675482D1D56377BDA31321AD7ACAB06F4AA5D4BB74746DD2A93C3902E798080EF13046A143BB59B92BEC207654EFCDAFCFF7AAEDC5C7E55310CE83907A4D7BE2FD30B6AD2B1DF5FFE5774533B3580DDAE8E4498B39F0ED3DAE0D7F46B29AB44A74B58846D924B81C3DA738B129748900445751ADD37319792E8CD540D3BE4C13F395E2EB8F35C7E108E8641008D456647B0A165CEA0AA29094EF397EBE82EAB0F72A7300EFAC7F4FD1477C3A45B2857C2B3F982FDB745589B");
     BN_hex2bn(&s, "d462668484a3a32867584ff0457ec4f49e9c70001891326fe2c6876ef2aac8826b24e0e13bcfeaa0bc7ed8f4a69cfae83fcbca1061c317716f666a6067aed7757f4096864bdc95224a508c37add062bc008a061f11bad9a27f5c4687ed206e8827e45f87067f4b98d687c590ede7031a9e8da259df490a1c2942d0f05a229acc7dae2057fabf951a71104830c54f619275176864a8ae395d16dcca5bdcf525c05fa27675abcea4eb34ce4b4c7c532d056a471738fda4aac0c1dd781817016c139f2575402501f686d08bbbeb307f5848d326f23a72b02d962f4cf3bbdfa53cf3c16bd29d3d2ad0bb48acfacc21bc23518a1a055111bcd09a0e83bd03bd5fb1b4");
     BN_hex2bn(&e, "010001");
@@ -1059,4 +1059,4 @@ Hash Value: 76F1D7A395BEDD4008CE2398487B98E2DAD6513CF28205B16C9DDBB781462C72
 Signature matches!
 ```
 
-We can observe that the first output ("Signature Verification") gives us the message that was signed but is padded. To only filter the 256 bits of the `sha256sum` we used the `BN_mask_bits` function that will truncate the hash value. We can then see that the signature is valid, as the hash of the server's certificate is indeed the same as obtained.
+We can observe that the first output ("Signature Verification") gives us the message that was signed but is padded. To fetch the 256 bits of the `sha256sum` we used the `BN_mask_bits` function that will truncate the hash value. We can then see that the signature is valid, as the hash of the server's certificate is indeed the same as obtained.
