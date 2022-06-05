@@ -130,17 +130,17 @@ After TLS handshake. Press any key to continue ..
   - ***View output above.***
 
 - **Explain the purpose of `etc/ssl/certs`.**
-  - It is where Root CA certificates are stored, and they're used to veirfy if a given server's certificate was signed by a root CA. This might include validating the entire certificate chain, of course.
+  - It is where Root CA certificates are stored, and they're used to verify if a given server's certificate was signed by a root CA. This might include validating the entire certificate chain, of course.
 
 - **Use Wireshark to capture the network traffics during the execution of the program, and explain your observation. In particular, explain which step triggers the TCP handshake, and which step triggers the TLS handshake. Explain the relationship between the TLS handshake and the TCP handshake.**
   - TCP Handshake occurs in packets 3 to 5, where both the client and server establish a connection. This is done after getting the server's IP address from its domain name, shown in packets 1 and 2. 
   - After the TCP handshake, at frame 6, the TLS handshake starts, with:
-    - **Client Hello** sending its client random number, available cipher suites, compression methods, MAC algorithm, algorithm used for key exchange, etc.
-    - **Server Hello, Certificate, Server Key Exchange, Server Hello Done**, where the server chooses the cipher to be used (as shown above), no compression (optional), sends it's certificate and the server's DH parameter due to the selected cipher suite. It finalizes with a Server Hello Done message.
+    - **Client Hello** sending its client random number, available cipher suites, compression methods, MAC algorithm, the algorithm used for key exchange, etc.
+    - **Server Hello, Certificate, Server Key Exchange, Server Hello Done**, where the server chooses the cipher to be used (as shown above), no compression (optional), sends its certificate and the server's DH parameter due to the selected cipher suite. It finalizes with a Server Hello Done message.
     - **Client Key Exchange, Change Cipher Spec, Encrypted Handshake Message** where the client sends its key share part of the DH algorithm, Change Cipher Spec message which lets the server know that it has generated the session key and is going to switch to encrypted communication, and finally the Encrypted message.
-    - **New Session Ticket, Change Cipher Spec, Encrypted Handshake message**. The Session Ticket is a blob of a session key and associated information encrypted by a key which is only known by the server. The ticket is sent by the server at the end of the TLS handshake for use when the two parties connect in the future (**Zero Round Trip Resumption**). Then it sends the Change Cipher Spec, and lastly the Encrypted Handshake message using the symmetric previously established key, as well.
+    - **New Session Ticket, Change Cipher Spec, Encrypted Handshake message**. The Session Ticket is a blob of a session key and associated information encrypted by a key that is only known by the server. The ticket is sent by the server at the end of the TLS handshake for use when the two parties connect in the future (**Zero Round Trip Resumption**). Then it sends the Change Cipher Spec, and lastly, the Encrypted Handshake message using the symmetric previously established key, as well.
   - Afterwards, the connection is terminated.
-  - The TLS handshake happens after the TCP handshake. For the TCP or for the transport layer, everything in the TLS handshake is just application data. Once the TCP handshake is completed the TLS layer will initiate the TLS handshake (*the TLS position in the stack is after TCP*).
+  - The TLS handshake happens after the TCP handshake. For the TCP or the transport layer, everything in the TLS handshake is just application data. Once the TCP handshake is completed the TLS layer will initiate the TLS handshake (*the TLS position in the stack is after TCP*).
 
 ## Task 1.b: CA's Certificate
 
@@ -212,7 +212,7 @@ Enter the container:
 
 - Get IP of `www.example.com` running `dig www.example.com`. The output is `93.184.216.34`.
 - Enter the client container running `docker exec -it client-10.9.0.5 bash`.
-- Change `/etc/hosts` file adding the following line to it:
+- Change `/etc/hosts` file by adding the following line to it:
 
 ```
 93.184.216.34 www.example2020.com
@@ -263,7 +263,7 @@ ssock.shutdown(socket.SHUT_RDWR)
 ssock.close()
 ```
 
-Running `python3 handshake.py www.example2020.com`, we see the communication succeeded even though the retrieved subject name in the certificate of the TLS handshake was `www.example.com` instead of `www.example2020.com`. But, as we turned off this check, we don't get an error. The same doesn't happend if we change the `check_hostname` variable back to `True`. 
+Running `python3 handshake.py www.example2020.com`, we see the communication succeeded even though the retrieved subject name in the certificate of the TLS handshake was `www.example.com` instead of `www.example2020.com`. But, as we turned off this check, we don't get an error. The same doesn't happen if we change the `check_hostname` variable back to `True`. 
 
 `handshake.py`
 
@@ -384,7 +384,7 @@ ssock.close()
 
 - (2) Fetch an image file.
 
-When loading the LinkedIn page and opening the network tab in firefox we can see the different requests made to several resources. One of them, to LinkedIn's main image at `https://static-exp2.licdn.com/aero-v1/sc/h/dxf91zhqd2z6b0bwg85ktm5s4`. If we modified the python script to use the path `/aero-v1/sc/h/dxf91zhqd2z6b0bwg85ktm5s4` and invoking the script with the hostname `static-exp2.licdn.com` by running `python3 handshake.py static-exp2.licdn.com`, we can successfully obtain the image.
+When loading the LinkedIn page and opening the network tab in firefox we can see the different requests made to several resources. One of them is LinkedIn's main image at `https://static-exp2.licdn.com/aero-v1/sc/h/dxf91zhqd2z6b0bwg85ktm5s4`. If we modified the python script to use the path `/aero-v1/sc/h/dxf91zhqd2z6b0bwg85ktm5s4` and invoke the script with the hostname `static-exp2.licdn.com` by running `python3 handshake.py static-exp2.licdn.com`, we can successfully obtain the image.
 
 `handshake.py`
 
@@ -447,7 +447,7 @@ ssock.shutdown(socket.SHUT_RDWR)
 ssock.close()
 ```
 
-This will generate an `image.svg` file which can be later openned in the browser to compare with the `www.linkedin.com` image.
+This will generate an `image.svg` file which can be later opened in the browser to compare with the `www.linkedin.com` image.
 
 # Task 2: TLS Server
 
@@ -541,7 +541,7 @@ ssock.shutdown(socket.SHUT_RDWR)
 ssock.close()
 ```
 
-- After running `sh gen_cert.sh` to produce the server certificates and copying them to the `server-certs` folder, append `10.9.0.43   www.pinto2022.com` to the `/etc/hosts` file in the **client container**.
+- After running `sh gen_cert.sh` to produce the server certificates and copy them to the `server-certs` folder, append `10.9.0.43   www.pinto2022.com` to the `/etc/hosts` file in the **client container**.
 
 - To update de CA certificate in the `client-certs` folder, execute the command `openssl x509 -in ca.crt -noout -subject_hash` in the `volumes/` folder. This will generate the Root CA hash, which will be the certificate the client will validate. 
   
@@ -599,7 +599,7 @@ After TLS handshake. Press any key to continue ...
 
 - As seen in the server certificate, the subject is `www.pinto2022.com` and the issuer is our CA with all the default parameters.
 
-Changing the `cadir` variable back to `/etc/ssl/certs` will throw a certificate verifition error because there will be no matching root CA in that folder.
+Changing the `cadir` variable back to `/etc/ssl/certs` will throw a certificate verification error because there will be no matching root CA in that folder.
 
 `handshake.py`
 
@@ -668,7 +668,7 @@ ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verif
 - Open Firefox, enter `about:preferences#privacy` > View Certificates > Authorities tab > Import CA certificate > Check "Trust this CA to identify websites".
 - With the `server.py` script running in the server container, access https://pinto2022.com.
 
-- Use `server_openssl.cnf` to set up multiple names for the `pinto2022` website. We then change the `CA_openssl.cnf` file in the `copy_extensions` field to copy the extension field from the certificate signing request into the final certificate (disabled by default). Then, we use the run `gen_cert_multiple_names.sh`. The we copy the generate certificates into the `server-certs/` folder.
+- Use `server_openssl.cnf` to set up multiple names for the `pinto2022` website. We then change the `CA_openssl.cnf` file in the `copy_extensions` field to copy the extension field from the certificate signing request into the final certificate (disabled by default). Then, we use the run `gen_cert_multiple_names.sh`. Then we copy the generated certificates into the `server-certs/` folder.
 - Then we update the hosts `/etc/hosts` file with the new domain entries.
 
 ```
@@ -725,7 +725,7 @@ while True:
         continue
 ```
 
-- Open browser and test all the domains above.
+- Open the browser and test all the domains above.
 
 # Task 3: A Simple HTTPS Proxy
 
@@ -742,7 +742,7 @@ This simulates the existence of a proxy because the traffic for `www.pinto2022.c
 - **Launch the MITM attack against your own server.**
   - Add `10.9.0.43  www.pinto2022.com` to the `/etc/hosts/` of the **proxy** container.
   
-  - Run `server.py` in server container, and `proxy.py` in proxy container.
+  - Run `server.py` in the server container, and `proxy.py` in the proxy container.
   - Type `www.pinto2022.com` in the browser.
   
   - `proxy.py`
