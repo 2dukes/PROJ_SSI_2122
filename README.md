@@ -11,6 +11,7 @@ The following [Seed Labs](https://github.com/seed-labs/seed-labs) related to Com
 | [Padding Oracle Attack](padding-oracle-attack/)        | [Padding Oracle Attack Lab](https://seedsecuritylabs.org/Labs_20.04/Crypto/Crypto_Padding_Oracle/)         | :heavy_check_mark: |
 | [Hash Length Extension Attack](hash-length-extension/) | [Hash Length Extension Attack Lab](https://seedsecuritylabs.org/Labs_20.04/Crypto/Crypto_Hash_Length_Ext/) | :heavy_check_mark: |
 | [RSA Encryption and Signature](rsa-public-key/)        | [RSA Public-Key Encryption and Signature Lab](https://seedsecuritylabs.org/Labs_20.04/Crypto/Crypto_RSA/)  | :heavy_check_mark: |
+| [TLS](tls/)                                            | [Transport Layer Security (TLS) Lab](https://seedsecuritylabs.org/Labs_20.04/Crypto/Crypto_TLS/)  | :heavy_check_mark: *concise* |
 
 * Collaborators
   - Diogo Rodrigues up201806429@up.pt
