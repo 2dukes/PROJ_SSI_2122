@@ -432,7 +432,16 @@ ssock.sendall(request)
 # Read HTTP Response from Server
 f = open('image.svg', 'wb')
 response = ssock.recv(2048)
-f.write(response.split(b"\r\n")[0][15:]) # Excluding HTTP/1.0 200 OK string
+first_stream = response.split(b"\r\n") # Excluding HTTP/1.0 200 OK string
+flag = False
+
+for st in first_stream:
+    if flag:
+        f.write(st)
+    if b'<svg' in st:
+        flag = True
+        f.write(st)
+
 while response:
     pprint.pprint(response.split(b"\r\n"))
     response = ssock.recv(2048)
